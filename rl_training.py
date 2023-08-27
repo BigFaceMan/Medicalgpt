@@ -28,6 +28,8 @@ from transformers import (
 )
 from trl import AutoModelForCausalLMWithValueHead, PPOConfig, PPOTrainer, set_seed
 
+from supervised_finetuning import get_conv_template
+
 os.environ["TOKENIZERS_PARALLELISM"] = "FALSE"
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
@@ -38,12 +40,6 @@ MODEL_CLASSES = {
     "baichuan": (AutoConfig, AutoModelForCausalLM, AutoTokenizer),
     "auto": (AutoConfig, AutoModelForCausalLM, AutoTokenizer),
 }
-
-PROMPT_TEMPLATE = (
-    "Below is an instruction that describes a task. "
-    "Write a response that appropriately completes the request.\n\n"
-    "### Instruction:\n{instruction}\n\n### Response: "
-)
 
 
 @dataclass
@@ -99,6 +95,7 @@ class ScriptArguments:
     )
     train_file_dir: Optional[str] = field(default=None, metadata={"help": "The input jsonl data file folder."})
     validation_file_dir: Optional[str] = field(default=None, metadata={"help": "The evaluation jsonl file folder."}, )
+    template_name: Optional[str] = field(default="vicuna", metadata={"help": "The template name."})
     batch_size: Optional[int] = field(default=8, metadata={"help": "Batch size"})
     mini_batch_size: Optional[int] = field(default=1, metadata={"help": "PPO minibatch size"})
     max_source_length: Optional[int] = field(default=256, metadata={"help": "Max length of prompt input text"})
@@ -160,9 +157,9 @@ class ScriptArguments:
     )
     save_steps: Optional[int] = field(default=50, metadata={"help": "X steps to save the model"})
     output_dir: Optional[str] = field(default="outputs-rl", metadata={"help": "The output directory"})
-    seed: Optional[int] = field(default=0, metadata={"help": "the seed"})
-    max_steps: Optional[int] = field(default=200, metadata={"help": "number of steps to train"})
-    log_with: Optional[str] = field(default="tensorboard", metadata={"help": "log with wandb or tensorboard"})
+    seed: Optional[int] = field(default=0, metadata={"help": "Seed"})
+    max_steps: Optional[int] = field(default=200, metadata={"help": "Number of steps to train"})
+    report_to: Optional[str] = field(default="tensorboard", metadata={"help": "Report to wandb or tensorboard"})
 
     def __post_init__(self):
         if self.model_type is None:
@@ -220,8 +217,7 @@ def calculate_rewards(reward_score_outputs, reward_baseline=0):
 def main():
     parser = HfArgumentParser(ScriptArguments)
     args = parser.parse_args_into_dataclasses()[0]
-
-    logger.warning(f"Parse args: {args}")
+    logger.info(f"Parse args: {args}")
 
     config_class, model_class, tokenizer_class = MODEL_CLASSES[args.model_type]
     if args.model_type == 'bloom':
@@ -236,9 +232,8 @@ def main():
     if not tokenizer_name_or_path:
         tokenizer_name_or_path = args.model_name_or_path
     tokenizer = tokenizer_class.from_pretrained(tokenizer_name_or_path, **tokenizer_kwargs)
-    # Required for llama
-    if args.model_type == "llama" and tokenizer.pad_token is None:
-        tokenizer.add_special_tokens({"pad_token": "[PAD]"})
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token_id = 0  # set as the <unk> token
 
     logger.info("Load model")
     peft_config = LoraConfig(
@@ -342,24 +337,47 @@ def main():
     # Preprocessing the datasets
     max_source_length = args.max_source_length
     max_target_length = args.max_target_length
+    prompt_template = get_conv_template(args.template_name)
 
     def preprocess_function(examples):
         new_examples = {
             "query": [],
             "input_ids": [],
         }
-        for conversation in examples['conversations']:
-            for message in conversation:
-                instruction = message['value']
-                input = message['from']
-                if input:
-                    instruction = instruction + "\n" + input
-                source = PROMPT_TEMPLATE.format_map({"instruction": instruction})
+        roles = ["human", "gpt"]
+
+        def get_prompt(examples):
+            for i, source in enumerate(examples['conversations']):
+                if len(source) < 2:
+                    continue
+                data_role = source[0].get("from", "")
+                if data_role not in roles or data_role != roles[0]:
+                    # Skip the first one if it is not from human
+                    source = source[1:]
+                if len(source) < 2:
+                    continue
+                messages = []
+                for j, sentence in enumerate(source):
+                    data_role = sentence.get("from", "")
+                    if data_role not in roles:
+                        logger.warning(f"unknown role: {data_role}, {i}. (ignored)")
+                        break
+                    if data_role == roles[j % 2]:
+                        messages.append(sentence["value"])
+                if len(messages) < 2 or len(messages) % 2 != 0:
+                    continue
+                # Convert the list to pairs of elements
+                history_messages = [[messages[k], messages[k + 1]] for k in range(0, len(messages), 2)]
+                yield prompt_template.get_prompt(history_messages)
+
+        for prompt in get_prompt(examples):
+            for i in range(len(prompt) // 2):
+                source_txt = prompt[2 * i]
                 tokenized_question = tokenizer(
-                    source, truncation=True, max_length=max_source_length, padding="max_length",
+                    source_txt, truncation=True, max_length=max_source_length, padding="max_length",
                     return_tensors="pt"
                 )
-                new_examples["query"].append(source)
+                new_examples["query"].append(source_txt)
                 new_examples["input_ids"].append(tokenized_question["input_ids"])
 
         return new_examples
@@ -395,7 +413,7 @@ def main():
         steps=args.max_steps,
         model_name=args.model_name_or_path,
         learning_rate=args.learning_rate,
-        log_with=args.log_with,
+        log_with=args.report_to,
         batch_size=args.batch_size,
         mini_batch_size=args.mini_batch_size,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
