@@ -179,6 +179,13 @@ def main():
 
     acc_sum = correct_sum / len(ds)
     acc_avg = correct_avg / len(ds)
+    results.append({
+        "idx": "final",
+        "correct_sum": correct_sum,
+        "correct_avg": correct_avg,
+        "accuracy_sum": acc_sum,
+        "accuracy_avg": acc_avg,
+    })
 
     print("\nFinal Results")
     print(f"split={args.split}, subject={args.subject}, samples={len(ds)}")

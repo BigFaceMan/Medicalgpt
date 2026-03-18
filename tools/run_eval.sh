@@ -1,8 +1,8 @@
-python local_ceval_zero_shot.py \
-  --model_path Qwen/Qwen2.5-0.5B-instruct \
+python eval/local_ceval_zero_shot.py \
+  --model_path /lfs1/users/spsong/Code/MedicalGPT/output/qwen0.5B-instruct-merge \
   --subject basic_medicine \
-  --split val \
-  --device cuda:4 \
+  --split test \
+  --device cuda:1 \
   --dtype bfloat16 \
   --target_delimiter " " \
-  --save_path ./basic_medicine_val.jsonl
+  --save_path ./sft_medicine_test_0.5B.jsonl
