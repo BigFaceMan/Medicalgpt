@@ -206,7 +206,7 @@ class ChatPDF:
     def _get_chat_input(self):
         messages = []
         if self.prompt_template_name:
-            from template import get_conv_template
+            from src.trainer.template import get_conv_template
             prompt_template = get_conv_template(self.prompt_template_name)
             prompt = prompt_template.get_prompt(messages=self.history)
             input_ids = self.tokenizer(prompt, return_tensors='pt').input_ids

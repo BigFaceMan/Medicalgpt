@@ -361,12 +361,23 @@ def main():
             trust_remote_code=model_args.trust_remote_code,
             cache_dir=model_args.cache_dir
         )
+
+        if model_args.load_in_4bit and model_args.load_in_8bit:
+            raise ValueError("Error, load_in_4bit and load_in_8bit cannot be set at the same time")
+        elif model_args.load_in_8bit or model_args.load_in_4bit:
+            quantization_config = BitsAndBytesConfig(
+                load_in_4bit=model_args.load_in_4bit,
+                load_in_8bit=model_args.load_in_8bit,
+                bnb_4bit_compute_dtype=torch_dtype,
+            )
+        else:
+            quantization_config = None
+
         model = AutoModelForSequenceClassification.from_pretrained(
             model_args.model_name_or_path,
             config=config,
             torch_dtype=torch_dtype,
-            load_in_4bit=model_args.load_in_4bit,
-            load_in_8bit=model_args.load_in_8bit,
+            quantization_config=quantization_config,
             device_map=model_args.device_map,
             trust_remote_code=model_args.trust_remote_code,
         )
@@ -407,7 +418,7 @@ def main():
             model = PeftModel.from_pretrained(model, script_args.peft_path, is_trainable=True)
         else:
             logger.info("Init new peft model")
-            if model_args.load_in_8bit:
+            if model_args.load_in_8bit or model_args.load_in_4bit:
                 model = prepare_model_for_kbit_training(model)
             target_modules = script_args.target_modules.split(',') if script_args.target_modules else None
             if target_modules and 'all' in target_modules:

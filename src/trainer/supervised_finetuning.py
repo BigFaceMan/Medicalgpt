@@ -822,6 +822,7 @@ def main():
                 modules_to_save = modules_to_save.split(',')
             logger.info(f"Peft target_modules: {target_modules}")
             logger.info(f"Peft lora_rank: {script_args.lora_rank}")
+            # config peft 
             peft_config = LoraConfig(
                 task_type=TaskType.CAUSAL_LM,
                 target_modules=target_modules,

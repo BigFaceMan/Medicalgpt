@@ -1,20 +1,10 @@
 # -*- coding: utf-8 -*-
-"""
-@description: 标准PPL评估（无量化版本）
-
-usage:
-python eval_fp.py \
-  --model_path /path/to/model \
-  --data_path data.jsonl
-"""
-
 import torch
 import json
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import argparse
 from loguru import logger
-import os
 
 
 parser = argparse.ArgumentParser(description="========FP模型PPL评估========")

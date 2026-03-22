@@ -24,7 +24,7 @@ from transformers import (
     BitsAndBytesConfig,
 )
 
-from template import get_conv_template
+from src.trainer.template import get_conv_template
 
 
 class TextDataset(Dataset):

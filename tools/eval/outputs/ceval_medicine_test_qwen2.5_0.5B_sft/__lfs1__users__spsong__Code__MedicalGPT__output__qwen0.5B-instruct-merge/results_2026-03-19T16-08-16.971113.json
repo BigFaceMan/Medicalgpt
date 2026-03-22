@@ -1,0 +1,301 @@
+{
+  "results": {
+    "ceval-test_basic_medicine": {
+      "name": "ceval-test_basic_medicine",
+      "alias": "ceval-test_basic_medicine",
+      "sample_len": 175,
+      "acc,none": 0.5257142857142857,
+      "acc_stderr,none": 0.03785474169043359,
+      "acc_norm,none": 0.5257142857142857,
+      "acc_norm_stderr,none": 0.03785474169043359
+    },
+    "ceval-test_clinical_medicine": {
+      "name": "ceval-test_clinical_medicine",
+      "alias": "ceval-test_clinical_medicine",
+      "sample_len": 200,
+      "acc,none": 0.485,
+      "acc_stderr,none": 0.03542810683297719,
+      "acc_norm,none": 0.485,
+      "acc_norm_stderr,none": 0.03542810683297719
+    },
+    "ceval-test_physician": {
+      "name": "ceval-test_physician",
+      "alias": "ceval-test_physician",
+      "sample_len": 443,
+      "acc,none": 0.6162528216704289,
+      "acc_stderr,none": 0.023130814370111934,
+      "acc_norm,none": 0.6162528216704289,
+      "acc_norm_stderr,none": 0.023130814370111934
+    }
+  },
+  "group_subtasks": {},
+  "configs": {
+    "ceval-test_basic_medicine": {
+      "task": "ceval-test_basic_medicine",
+      "dataset_path": "ceval/ceval-exam",
+      "dataset_name": "basic_medicine",
+      "test_split": "test",
+      "fewshot_split": "dev",
+      "doc_to_text": "{{question.strip()}}\nA. {{A}}\nB. {{B}}\nC. {{C}}\nD. {{D}}\n答案：",
+      "doc_to_target": "{{['A', 'B', 'C', 'D'].index(answer)}}",
+      "unsafe_code": false,
+      "doc_to_choice": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "description": "以下是中国关于基础医学的单项选择题，请选出其中的正确答案。\n\n",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "fewshot_config": {
+        "sampler": "first_n",
+        "split": "dev",
+        "process_docs": null,
+        "fewshot_indices": null,
+        "samples": null,
+        "doc_to_text": "{{question.strip()}}\nA. {{A}}\nB. {{B}}\nC. {{C}}\nD. {{D}}\n答案：",
+        "doc_to_choice": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "doc_to_target": "{{['A', 'B', 'C', 'D'].index(answer)}}",
+        "gen_prefix": null,
+        "fewshot_delimiter": "\n\n",
+        "target_delimiter": " "
+      },
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        },
+        {
+          "metric": "acc_norm",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": false,
+      "metadata": {
+        "version": 2.0,
+        "pretrained": "/lfs1/users/spsong/Code/MedicalGPT/output/qwen0.5B-instruct-merge",
+        "trust_remote_code": true,
+        "config_source": "/lfs1/users/spsong/Code/lm-evaluation-harness/lm_eval/tasks/ceval/ceval-test_basic_medicine.yaml"
+      }
+    },
+    "ceval-test_clinical_medicine": {
+      "task": "ceval-test_clinical_medicine",
+      "dataset_path": "ceval/ceval-exam",
+      "dataset_name": "clinical_medicine",
+      "test_split": "test",
+      "fewshot_split": "dev",
+      "doc_to_text": "{{question.strip()}}\nA. {{A}}\nB. {{B}}\nC. {{C}}\nD. {{D}}\n答案：",
+      "doc_to_target": "{{['A', 'B', 'C', 'D'].index(answer)}}",
+      "unsafe_code": false,
+      "doc_to_choice": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "description": "以下是中国关于临床医学的单项选择题，请选出其中的正确答案。\n\n",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "fewshot_config": {
+        "sampler": "first_n",
+        "split": "dev",
+        "process_docs": null,
+        "fewshot_indices": null,
+        "samples": null,
+        "doc_to_text": "{{question.strip()}}\nA. {{A}}\nB. {{B}}\nC. {{C}}\nD. {{D}}\n答案：",
+        "doc_to_choice": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "doc_to_target": "{{['A', 'B', 'C', 'D'].index(answer)}}",
+        "gen_prefix": null,
+        "fewshot_delimiter": "\n\n",
+        "target_delimiter": " "
+      },
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        },
+        {
+          "metric": "acc_norm",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": false,
+      "metadata": {
+        "version": 2.0,
+        "pretrained": "/lfs1/users/spsong/Code/MedicalGPT/output/qwen0.5B-instruct-merge",
+        "trust_remote_code": true,
+        "config_source": "/lfs1/users/spsong/Code/lm-evaluation-harness/lm_eval/tasks/ceval/ceval-test_clinical_medicine.yaml"
+      }
+    },
+    "ceval-test_physician": {
+      "task": "ceval-test_physician",
+      "dataset_path": "ceval/ceval-exam",
+      "dataset_name": "physician",
+      "test_split": "test",
+      "fewshot_split": "dev",
+      "doc_to_text": "{{question.strip()}}\nA. {{A}}\nB. {{B}}\nC. {{C}}\nD. {{D}}\n答案：",
+      "doc_to_target": "{{['A', 'B', 'C', 'D'].index(answer)}}",
+      "unsafe_code": false,
+      "doc_to_choice": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "description": "以下是中国关于医师资格的单项选择题，请选出其中的正确答案。\n\n",
+      "target_delimiter": " ",
+      "fewshot_delimiter": "\n\n",
+      "fewshot_config": {
+        "sampler": "first_n",
+        "split": "dev",
+        "process_docs": null,
+        "fewshot_indices": null,
+        "samples": null,
+        "doc_to_text": "{{question.strip()}}\nA. {{A}}\nB. {{B}}\nC. {{C}}\nD. {{D}}\n答案：",
+        "doc_to_choice": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "doc_to_target": "{{['A', 'B', 'C', 'D'].index(answer)}}",
+        "gen_prefix": null,
+        "fewshot_delimiter": "\n\n",
+        "target_delimiter": " "
+      },
+      "num_fewshot": 0,
+      "metric_list": [
+        {
+          "metric": "acc",
+          "aggregation": "mean",
+          "higher_is_better": true
+        },
+        {
+          "metric": "acc_norm",
+          "aggregation": "mean",
+          "higher_is_better": true
+        }
+      ],
+      "output_type": "multiple_choice",
+      "repeats": 1,
+      "should_decontaminate": false,
+      "metadata": {
+        "version": 2.0,
+        "pretrained": "/lfs1/users/spsong/Code/MedicalGPT/output/qwen0.5B-instruct-merge",
+        "trust_remote_code": true,
+        "config_source": "/lfs1/users/spsong/Code/lm-evaluation-harness/lm_eval/tasks/ceval/ceval-test_physician.yaml"
+      }
+    }
+  },
+  "versions": {
+    "ceval-test_basic_medicine": 2.0,
+    "ceval-test_clinical_medicine": 2.0,
+    "ceval-test_physician": 2.0
+  },
+  "n-shot": {
+    "ceval-test_basic_medicine": 0,
+    "ceval-test_clinical_medicine": 0,
+    "ceval-test_physician": 0
+  },
+  "higher_is_better": {
+    "ceval-test_basic_medicine": {
+      "acc": true,
+      "acc_norm": true
+    },
+    "ceval-test_clinical_medicine": {
+      "acc": true,
+      "acc_norm": true
+    },
+    "ceval-test_physician": {
+      "acc": true,
+      "acc_norm": true
+    }
+  },
+  "n-samples": {
+    "ceval-test_basic_medicine": {
+      "original": 175,
+      "effective": 175
+    },
+    "ceval-test_clinical_medicine": {
+      "original": 200,
+      "effective": 200
+    },
+    "ceval-test_physician": {
+      "original": 443,
+      "effective": 443
+    }
+  },
+  "config": {
+    "model": "hf",
+    "model_args": {
+      "pretrained": "/lfs1/users/spsong/Code/MedicalGPT/output/qwen0.5B-instruct-merge",
+      "trust_remote_code": true
+    },
+    "model_num_parameters": 494032768,
+    "model_dtype": "torch.bfloat16",
+    "model_revision": "main",
+    "model_sha": "",
+    "batch_size": "64",
+    "batch_sizes": [],
+    "device": "cuda:0",
+    "use_cache": null,
+    "limit": null,
+    "bootstrap_iters": 100000,
+    "gen_kwargs": {},
+    "random_seed": 0,
+    "numpy_seed": 1234,
+    "torch_seed": 1234,
+    "fewshot_seed": 1234
+  },
+  "git_hash": "1.4.0-181-g12d0227",
+  "date": 1773907632.939465,
+  "pretty_env_info": "PyTorch version: 2.5.1+cu121\nIs debug build: False\nCUDA used to build PyTorch: 12.1\nROCM used to build PyTorch: N/A\n\nOS: Ubuntu 18.04.6 LTS (x86_64)\nGCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0\nClang version: Could not collect\nCMake version: version 3.25.2\nLibc version: glibc-2.27\n\nPython version: 3.10.18 (main, Jun  5 2025, 13:14:17) [GCC 11.2.0] (64-bit runtime)\nPython platform: Linux-5.4.0-150-generic-x86_64-with-glibc2.27\nIs CUDA available: True\nCUDA runtime version: 9.1.85\nCUDA_MODULE_LOADING set to: LAZY\nGPU models and configuration: \nGPU 0: NVIDIA RTX A6000\nGPU 1: NVIDIA RTX A6000\nGPU 2: NVIDIA RTX A6000\nGPU 3: NVIDIA RTX A6000\nGPU 4: NVIDIA RTX A6000\nGPU 5: NVIDIA RTX A6000\nGPU 6: NVIDIA RTX A6000\nGPU 7: NVIDIA RTX A6000\nGPU 8: NVIDIA RTX A6000\nGPU 9: NVIDIA RTX A6000\n\nNvidia driver version: 535.146.02\ncuDNN version: Probably one of the following:\n/usr/lib/x86_64-linux-gnu/libcudnn.so.8.9.7\n/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.9.7\n/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.9.7\n/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.9.7\n/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.9.7\n/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.9.7\n/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.9.7\n/usr/local/cuda-12.1/targets/x86_64-linux/lib/libcudnn.so.8.9.1\n/usr/local/cuda-12.1/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.9.1\n/usr/local/cuda-12.1/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.9.1\n/usr/local/cuda-12.1/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.9.1\n/usr/local/cuda-12.1/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.9.1\n/usr/local/cuda-12.1/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.9.1\n/usr/local/cuda-12.1/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.9.1\nHIP runtime version: N/A\nMIOpen runtime version: N/A\nIs XNNPACK available: True\n\nCPU:\nArchitecture:        x86_64\nCPU op-mode(s):      32-bit, 64-bit\nByte Order:          Little Endian\nCPU(s):              104\nOn-line CPU(s) list: 0-103\nThread(s) per core:  2\nCore(s) per socket:  26\nSocket(s):           2\nNUMA node(s):        2\nVendor ID:           GenuineIntel\nCPU family:          6\nModel:               106\nModel name:          Intel(R) Xeon(R) Gold 5320 CPU @ 2.20GHz\nStepping:            6\nCPU MHz:             1069.165\nCPU max MHz:         2201.0000\nCPU min MHz:         800.0000\nBogoMIPS:            4400.00\nVirtualization:      VT-x\nL1d cache:           48K\nL1i cache:           32K\nL2 cache:            1280K\nL3 cache:            39936K\nNUMA node0 CPU(s):   0-25,52-77\nNUMA node1 CPU(s):   26-51,78-103\nFlags:               fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 invpcid_single ssbd mba ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb intel_pt avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local wbnoinvd dtherm ida arat pln pts avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg tme avx512_vpopcntdq rdpid md_clear pconfig flush_l1d arch_capabilities\n\nVersions of relevant libraries:\n[pip3] numpy==2.2.6\n[pip3] torch==2.5.1+cu121\n[pip3] triton==3.1.0\n[conda] numpy                     2.2.6                    pypi_0    pypi\n[conda] torch                     2.5.1+cu121              pypi_0    pypi\n[conda] triton                    3.1.0                    pypi_0    pypi",
+  "transformers_version": "5.3.0",
+  "lm_eval_version": "0.4.12.dev0",
+  "upper_git_hash": null,
+  "tokenizer_pad_token": [
+    "<|endoftext|>",
+    "151643"
+  ],
+  "tokenizer_eos_token": [
+    "<|im_end|>",
+    "151645"
+  ],
+  "tokenizer_bos_token": [
+    null,
+    "None"
+  ],
+  "eot_token_id": 151645,
+  "max_length": 32768,
+  "task_hashes": {},
+  "model_source": "hf",
+  "model_name": "/lfs1/users/spsong/Code/MedicalGPT/output/qwen0.5B-instruct-merge",
+  "model_name_sanitized": "__lfs1__users__spsong__Code__MedicalGPT__output__qwen0.5B-instruct-merge",
+  "system_instruction": null,
+  "system_instruction_sha": null,
+  "fewshot_as_multiturn": null,
+  "chat_template": null,
+  "chat_template_sha": null,
+  "total_evaluation_time_seconds": "70.63154232874513"
+}

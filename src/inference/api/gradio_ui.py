@@ -22,7 +22,7 @@ from transformers import (
     TextIteratorStreamer,
 )
 
-from template import get_conv_template
+from src.trainer.template import get_conv_template
 
 
 def main():

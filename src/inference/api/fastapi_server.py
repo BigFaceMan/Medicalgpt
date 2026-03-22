@@ -32,7 +32,7 @@ from transformers import (
     GenerationConfig,
 )
 
-from template import get_conv_template
+from src.trainer.template import get_conv_template
 
 
 @torch.inference_mode()

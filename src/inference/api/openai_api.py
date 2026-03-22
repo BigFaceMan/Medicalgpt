@@ -26,7 +26,7 @@ from starlette.responses import Response
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import GenerationConfig, TextIteratorStreamer
 
-from template import get_conv_template
+from src.trainer.template import get_conv_template
 
 
 class BasicAuthMiddleware(BaseHTTPMiddleware):
