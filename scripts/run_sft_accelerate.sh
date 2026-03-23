@@ -38,3 +38,4 @@ accelerate launch --num_processes=2 ../src/trainer/supervised_finetuning_acceler
     --ddp_find_unused_parameters False \
     --gradient_checkpointing True \
     --cache_dir ./cache --flash_attn True
+

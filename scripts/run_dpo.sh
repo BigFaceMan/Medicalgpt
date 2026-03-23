@@ -1,5 +1,5 @@
-CUDA_VISIBLE_DEVICES=0,1 python ../src/trainer/dpo_training.py \
-    --model_name_or_path Qwen/Qwen2.5-0.5B-Instruct \
+CUDA_VISIBLE_DEVICES=1 torchrun --nproc_per_node=1 ./src/trainer/dpo_training.py \
+    --model_name_or_path /lfs1/users/spsong/Code/MedicalGPT/output/qwen0.5B-instruct-merge \
     --template_name qwen \
     --train_file_dir ./data/reward \
     --validation_file_dir ./data/reward \
@@ -16,7 +16,7 @@ CUDA_VISIBLE_DEVICES=0,1 python ../src/trainer/dpo_training.py \
     --save_steps 50 \
     --max_source_length 1024 \
     --max_target_length 512 \
-    --output_dir outputs-dpo-qwen-v1 \
+    --output_dir ./output/qwen0.5B-instruct-dpo \
     --target_modules all \
     --lora_rank 8 \
     --lora_alpha 16 \
@@ -24,7 +24,10 @@ CUDA_VISIBLE_DEVICES=0,1 python ../src/trainer/dpo_training.py \
     --torch_dtype bfloat16 \
     --bf16 True \
     --fp16 False \
-    --report_to tensorboard \
+    --report_to swanlab \
+    --run_name qwen0.5B-instruct-dpo \
     --remove_unused_columns False \
     --gradient_checkpointing True \
+    --ddp_find_unused_parameters False \
+    --ddp_timeout 30000 \
     --cache_dir ./cache

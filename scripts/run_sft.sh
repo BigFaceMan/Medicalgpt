@@ -1,30 +1,31 @@
-CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 ../src/trainer/supervised_finetuning.py \
-    --model_name_or_path Qwen/Qwen2.5-0.5B-Instruct \
-    --train_file_dir ./data/finetune \
+CUDA_VISIBLE_DEVICES=0,1,2,3 torchrun --nproc_per_node 4 ./src/trainer/supervised_finetuning.py \
+    --model_name_or_path Qwen/Qwen2.5-3B-instruct \
+    --train_file_dir /lfs3/users/spsong/dataset/LLMData/finetune/train \
+    --validation_file_dir  /lfs3/users/spsong/dataset/LLMData/finetune/valid \
     --per_device_train_batch_size 4 \
     --per_device_eval_batch_size 4 \
-    --gradient_accumulation_steps 4 \
+    --gradient_accumulation_steps 2 \
     --do_train \
     --do_eval \
     --template_name qwen \
     --use_peft True \
-    --max_train_samples 2000 \
-    --max_eval_samples 200 \
+    --max_train_samples 50000 \
+    --max_eval_samples -1 \
     --validation_split_percentage 10 \
     --model_max_length 4096 \
-    --num_train_epochs 20 \
+    --num_train_epochs 2 \
     --learning_rate 2e-5 \
-    --warmup_steps 5 \
+    --warmup_steps 50 \
     --weight_decay 0.05 \
     --logging_strategy steps \
     --logging_steps 5 \
-    --eval_steps 50 \
+    --eval_steps 200 \
     --eval_strategy steps \
     --save_steps 500 \
     --save_strategy steps \
     --save_total_limit 13 \
     --preprocessing_num_workers 4 \
-    --output_dir ./output/qwen0.5Binstruct-sft \
+    --output_dir ./output/qwen3B-instruct-sft \
     --ddp_timeout 30000 \
     --logging_first_step True \
     --target_modules all \
@@ -34,7 +35,7 @@ CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 ../src/trainer/supervised_f
     --torch_dtype bfloat16 \
     --bf16 \
     --report_to swanlab \
-    --run_name qwen0.5Binstruct-sft \
+    --run_name qwen3B-instruct-sft \
     --ddp_find_unused_parameters False \
     --gradient_checkpointing True \
     --cache_dir ./cache --flash_attn True

@@ -2,16 +2,16 @@
 
 # 优化的GRPO QLoRA训练脚本 - 解决显存不足问题
 # 针对32k长文本的配置
-CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 ../src/trainer/grpo_training.py \
-    --model_name_or_path Qwen/Qwen2.5-1.5B-Instruct \
-    --train_file_dir data/grop \
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 ./src/trainer/grpo_training.py \
+    --model_name_or_path /lfs1/users/spsong/Code/MedicalGPT/output/qwen0.5B-instruct-merge \
+    --train_file_dir ./data/grpo \
     --train_samples -1 \
     --max_steps -1 --num_train_epochs 1 \
     --save_steps 50 \
     --save_strategy steps \
     --save_total_limit 13 \
     --output_dir outputs-grpo-qwen-v1 \
-    --torch_dtype bfloat16 \
+    --dtype bfloat16 \
     --bf16 True \
     --report_to tensorboard \
     --remove_unused_columns False \
@@ -37,7 +37,6 @@ CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node 2 ../src/trainer/grpo_trainin
     --per_device_eval_batch_size 1 \
     --num_generations 4 \
     --gradient_accumulation_steps 1 \
-    --max_prompt_length 16384 \
     --max_completion_length 512
 
 echo "训练完成!"

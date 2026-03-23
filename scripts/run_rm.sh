@@ -1,6 +1,6 @@
 # reward model 训练暂不支持 torchrun 多卡训练
-CUDA_VISIBLE_DEVICES=0,1 python ../src/trainer/reward_modeling.py \
-    --model_name_or_path Qwen/Qwen2.5-0.5B-Instruct \
+CUDA_VISIBLE_DEVICES=0,1 python ./src/trainer/reward_modeling.py \
+    --model_name_or_path /lfs1/users/spsong/Code/MedicalGPT/output/qwen0.5B-instruct-merge \
     --train_file_dir ./data/reward \
     --validation_file_dir ./data/reward \
     --per_device_train_batch_size 4 \
@@ -24,8 +24,7 @@ CUDA_VISIBLE_DEVICES=0,1 python ../src/trainer/reward_modeling.py \
     --save_total_limit 3 \
     --max_source_length 1024 \
     --max_target_length 256 \
-    --output_dir outputs-rm-qwen-v1 \
-    --overwrite_output_dir \
+    --output_dir ./output/qwen0.5B-instruct-rm  \
     --ddp_timeout 30000 \
     --logging_first_step True \
     --target_modules all \
@@ -34,7 +33,9 @@ CUDA_VISIBLE_DEVICES=0,1 python ../src/trainer/reward_modeling.py \
     --lora_dropout 0.05 \
     --bf16 \
     --torch_dtype bfloat16 \
-    --report_to tensorboard \
+    --report_to swanlab \
+    --run_name qwen0.5B-instruct-rm \
     --ddp_find_unused_parameters False \
     --remove_unused_columns False \
     --gradient_checkpointing True
+
