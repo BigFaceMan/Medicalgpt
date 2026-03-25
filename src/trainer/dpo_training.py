@@ -24,7 +24,7 @@ from transformers import (
 from transformers.integrations import is_deepspeed_zero3_enabled
 from trl import DPOTrainer, DPOConfig
 
-from template import get_conv_template
+from .template import get_conv_template
 
 os.environ["TOKENIZERS_PARALLELISM"] = "FALSE"
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
