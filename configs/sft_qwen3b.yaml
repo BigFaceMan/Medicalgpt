@@ -1,5 +1,5 @@
 # SFT Training Config for Qwen2.5-3B
-model_name_or_path: Qwen/Qwen2.5-3B-instruct
+model_name_or_path: Qwen/Qwen2.5-3B-Instruct
 train_file_dir: /lfs3/users/spsong/dataset/LLMData/finetune/train
 validation_file_dir: /lfs3/users/spsong/dataset/LLMData/finetune/valid
 per_device_train_batch_size: 4
@@ -15,7 +15,7 @@ validation_split_percentage: 10
 model_max_length: 4096
 num_train_epochs: 2
 learning_rate: 2e-5
-warmup_steps: 50
+warmup_ratio: 0.05
 weight_decay: 0.05
 logging_strategy: steps
 logging_steps: 5
