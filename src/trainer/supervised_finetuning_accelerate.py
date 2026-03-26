@@ -27,7 +27,13 @@ import torch
 import torch.utils.data
 from datasets import load_dataset
 from loguru import logger
-from peft import LoraConfig, TaskType, get_peft_model, PeftModel, prepare_model_for_kbit_training
+from peft import (
+    LoraConfig,
+    TaskType,
+    get_peft_model,
+    PeftModel,
+    prepare_model_for_kbit_training,
+)
 from transformers import (
     AutoConfig,
     AutoModelForCausalLM,
@@ -59,6 +65,7 @@ from template import get_conv_template
 @dataclass
 class ModelArguments:
     """Arguments pertaining to which model/config/tokenizer we are going to fine-tune."""
+
     model_name_or_path: Optional[str] = field(default=None)
     load_in_8bit: bool = field(default=False)
     load_in_4bit: bool = field(default=False)
@@ -72,22 +79,34 @@ class ModelArguments:
     trust_remote_code: bool = field(default=True)
     rope_scaling: Optional[Literal["linear", "dynamic"]] = field(default=None)
     flash_attn: Optional[bool] = field(
-        default=False,
-        metadata={"help": "Enable FlashAttention-2 for faster training."}
+        default=False, metadata={"help": "Enable FlashAttention-2 for faster training."}
     )
 
 
 @dataclass
 class DataArguments:
-    dataset_name: Optional[str] = field(default=None,
-                                        metadata={"help": "The name of the dataset to use (via the datasets library)."})
-    dataset_config_name: Optional[str] = field(default=None, metadata={
-        "help": "The configuration name of the dataset to use (via the datasets library)."})
-    train_file_dir: str = field(default=None, metadata={"help": "Path to the training data."})
-    validation_file_dir: str = field(default=None, metadata={"help": "Path to the validation data."})
+    dataset_name: Optional[str] = field(
+        default=None,
+        metadata={"help": "The name of the dataset to use (via the datasets library)."},
+    )
+    dataset_config_name: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "The configuration name of the dataset to use (via the datasets library)."
+        },
+    )
+    train_file_dir: str = field(
+        default=None, metadata={"help": "Path to the training data."}
+    )
+    validation_file_dir: str = field(
+        default=None, metadata={"help": "Path to the validation data."}
+    )
     max_train_samples: Optional[int] = field(default=None)
     max_eval_samples: Optional[int] = field(default=None)
-    overwrite_cache: bool = field(default=False, metadata={"help": "Overwrite the cached training and evaluation sets"})
+    overwrite_cache: bool = field(
+        default=False,
+        metadata={"help": "Overwrite the cached training and evaluation sets"},
+    )
     validation_split_percentage: Optional[int] = field(default=1)
     preprocessing_num_workers: Optional[int] = field(default=None)
     ignore_pad_token_for_loss: bool = field(default=True)
@@ -109,7 +128,7 @@ class ScriptArguments:
     # 添加参数控制是否使用张量并行
     use_tensor_parallel: bool = field(
         default=False,
-        metadata={"help": "Whether to use tensor parallelism for large models"}
+        metadata={"help": "Whether to use tensor parallelism for large models"},
     )
 
 
@@ -118,6 +137,7 @@ def find_all_linear_names(model, int4=False, int8=False):
     cls = torch.nn.Linear
     if int4 or int8:
         import bitsandbytes as bnb
+
         if int4:
             cls = bnb.nn.Linear4bit
         elif int8:
@@ -126,11 +146,11 @@ def find_all_linear_names(model, int4=False, int8=False):
     for name, module in model.named_modules():
         if isinstance(module, cls):
             # last layer is not add to lora_module_names
-            if 'lm_head' in name:
+            if "lm_head" in name:
                 continue
-            if 'output_layer' in name:
+            if "output_layer" in name:
                 continue
-            names = name.split('.')
+            names = name.split(".")
             lora_module_names.add(names[0] if len(names) == 1 else names[-1])
     return sorted(lora_module_names)
 
@@ -173,8 +193,7 @@ def load_datasets(data_args, model_args):
             shuffled_train_dataset = raw_datasets["train"].shuffle(seed=42)
             # Split the shuffled train dataset into training and validation sets
             split = shuffled_train_dataset.train_test_split(
-                test_size=data_args.validation_split_percentage / 100,
-                seed=42
+                test_size=data_args.validation_split_percentage / 100, seed=42
             )
             # Assign the split datasets back to raw_datasets
             raw_datasets["train"] = split["train"]
@@ -182,18 +201,24 @@ def load_datasets(data_args, model_args):
     else:
         # Loading a dataset from local files.
         data_files = {}
-        if data_args.train_file_dir is not None and os.path.exists(data_args.train_file_dir):
-            train_data_files = glob(f'{data_args.train_file_dir}/**/*.json', recursive=True) + glob(
-                f'{data_args.train_file_dir}/**/*.jsonl', recursive=True)
+        if data_args.train_file_dir is not None and os.path.exists(
+            data_args.train_file_dir
+        ):
+            train_data_files = glob(
+                f"{data_args.train_file_dir}/**/*.json", recursive=True
+            ) + glob(f"{data_args.train_file_dir}/**/*.jsonl", recursive=True)
             logger.info(f"train files: {train_data_files}")
             data_files["train"] = train_data_files
-        if data_args.validation_file_dir is not None and os.path.exists(data_args.validation_file_dir):
-            eval_data_files = glob(f'{data_args.validation_file_dir}/**/*.json', recursive=True) + glob(
-                f'{data_args.validation_file_dir}/**/*.jsonl', recursive=True)
+        if data_args.validation_file_dir is not None and os.path.exists(
+            data_args.validation_file_dir
+        ):
+            eval_data_files = glob(
+                f"{data_args.validation_file_dir}/**/*.json", recursive=True
+            ) + glob(f"{data_args.validation_file_dir}/**/*.jsonl", recursive=True)
             logger.info(f"eval files: {eval_data_files}")
             data_files["validation"] = eval_data_files
         raw_datasets = load_dataset(
-            'json',
+            "json",
             data_files=data_files,
             cache_dir=model_args.cache_dir,
         )
@@ -201,8 +226,7 @@ def load_datasets(data_args, model_args):
         if "validation" not in raw_datasets.keys():
             shuffled_train_dataset = raw_datasets["train"].shuffle(seed=42)
             split = shuffled_train_dataset.train_test_split(
-                test_size=float(data_args.validation_split_percentage / 100),
-                seed=42
+                test_size=float(data_args.validation_split_percentage / 100), seed=42
             )
             raw_datasets["train"] = split["train"]
             raw_datasets["validation"] = split["test"]
@@ -227,7 +251,7 @@ def create_preprocess_function(tokenizer, prompt_template, script_args, IGNORE_I
 
         def get_dialog(examples):
             system_prompts = examples.get("system_prompt", "")
-            for i, source in enumerate(examples['conversations']):
+            for i, source in enumerate(examples["conversations"]):
                 system_prompt = ""
                 if len(source) < 2:
                     continue
@@ -253,17 +277,25 @@ def create_preprocess_function(tokenizer, prompt_template, script_args, IGNORE_I
                 if len(messages) % 2 != 0:
                     continue
                 # Convert the list to pairs of elements
-                history_messages = [[messages[k], messages[k + 1]] for k in range(0, len(messages), 2)]
+                history_messages = [
+                    [messages[k], messages[k + 1]] for k in range(0, len(messages), 2)
+                ]
                 if not system_prompt:
                     system_prompt = system_prompts[i] if system_prompts else ""
-                yield prompt_template.get_dialog(history_messages, system_prompt=system_prompt)
+                yield prompt_template.get_dialog(
+                    history_messages, system_prompt=system_prompt
+                )
 
         for dialog in get_dialog(examples):
             input_ids, labels = [], []
 
             for i in range(len(dialog) // 2):
-                source_ids = tokenizer.encode(text=dialog[2 * i], add_special_tokens=(i == 0))
-                target_ids = tokenizer.encode(text=dialog[2 * i + 1], add_special_tokens=False)
+                source_ids = tokenizer.encode(
+                    text=dialog[2 * i], add_special_tokens=(i == 0)
+                )
+                target_ids = tokenizer.encode(
+                    text=dialog[2 * i + 1], add_special_tokens=False
+                )
 
                 total_len = len(source_ids) + len(target_ids)
                 max_source_len = int(max_length * (len(source_ids) / total_len))
@@ -272,7 +304,7 @@ def create_preprocess_function(tokenizer, prompt_template, script_args, IGNORE_I
                 if len(source_ids) > max_source_len:
                     source_ids = source_ids[:max_source_len]
                 if len(target_ids) > max_target_len - 1:  # eos token
-                    target_ids = target_ids[:max_target_len - 1]
+                    target_ids = target_ids[: max_target_len - 1]
                 if len(source_ids) > 0 and source_ids[0] == tokenizer.eos_token_id:
                     source_ids = source_ids[1:]
                 if len(target_ids) > 0 and target_ids[-1] == tokenizer.eos_token_id:
@@ -280,11 +312,17 @@ def create_preprocess_function(tokenizer, prompt_template, script_args, IGNORE_I
                 if len(input_ids) + len(source_ids) + len(target_ids) + 1 > max_length:
                     break
 
-                input_ids += source_ids + target_ids + [tokenizer.eos_token_id]  # add eos token for each turn
+                input_ids += (
+                    source_ids + target_ids + [tokenizer.eos_token_id]
+                )  # add eos token for each turn
                 if script_args.train_on_inputs:
                     labels += source_ids + target_ids + [tokenizer.eos_token_id]
                 else:
-                    labels += [IGNORE_INDEX] * len(source_ids) + target_ids + [tokenizer.eos_token_id]
+                    labels += (
+                        [IGNORE_INDEX] * len(source_ids)
+                        + target_ids
+                        + [tokenizer.eos_token_id]
+                    )
 
             input_ids_list.append(input_ids)
             attention_mask_list.append([1] * len(input_ids))
@@ -318,9 +356,9 @@ def check_and_optimize_memory():
     num_gpus = torch.cuda.device_count()
     for i in range(num_gpus):
         props = torch.cuda.get_device_properties(i)
-        total_memory = props.total_memory / 1024 ** 3
-        allocated = torch.cuda.memory_allocated(i) / 1024 ** 3
-        cached = torch.cuda.memory_reserved(i) / 1024 ** 3
+        total_memory = props.total_memory / 1024**3
+        allocated = torch.cuda.memory_allocated(i) / 1024**3
+        cached = torch.cuda.memory_reserved(i) / 1024**3
         free = total_memory - allocated - cached
 
         logger.info(f"GPU {i} ({props.name}):")
@@ -337,12 +375,12 @@ def check_and_optimize_memory():
             logger.warning("  4. 减小 --model_max_length")
 
     # 设置内存优化选项
-    if hasattr(torch.backends.cuda, 'enable_flash_sdp'):
+    if hasattr(torch.backends.cuda, "enable_flash_sdp"):
         torch.backends.cuda.enable_flash_sdp(True)
         logger.info("✅ 启用Flash Attention优化")
 
     # 启用内存高效的注意力机制
-    if hasattr(torch.backends.cuda, 'enable_mem_efficient_sdp'):
+    if hasattr(torch.backends.cuda, "enable_mem_efficient_sdp"):
         torch.backends.cuda.enable_mem_efficient_sdp(True)
         logger.info("✅ 启用内存高效注意力机制")
 
@@ -356,13 +394,29 @@ def get_unwrapped_model(model):
 
 def main():
     os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
-    parser = HfArgumentParser((ModelArguments, DataArguments, Seq2SeqTrainingArguments, ScriptArguments))
+    parser = HfArgumentParser(
+        (ModelArguments, DataArguments, Seq2SeqTrainingArguments, ScriptArguments)
+    )
 
-    if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
-        model_args, data_args, training_args, script_args = parser.parse_json_file(
-            json_file=os.path.abspath(sys.argv[1]))
+    config_file = None
+    if "--config" in sys.argv:
+        config_idx = sys.argv.index("--config")
+        config_file = sys.argv[config_idx + 1]
+        sys.argv = sys.argv[:config_idx] + sys.argv[config_idx + 2 :]
+
+    if config_file:
+        if config_file.endswith(".json"):
+            model_args, data_args, training_args, script_args = parser.parse_json_file(
+                json_file=os.path.abspath(config_file)
+            )
+        else:
+            model_args, data_args, training_args, script_args = parser.parse_yaml_file(
+                yaml_file=os.path.abspath(config_file)
+            )
     else:
-        model_args, data_args, training_args, script_args = parser.parse_args_into_dataclasses(look_for_args_file=False)
+        model_args, data_args, training_args, script_args = (
+            parser.parse_args_into_dataclasses(look_for_args_file=False)
+        )
 
     # 设置日志 - 只在主进程输出
     logger.info(f"🚀 使用Accelerate库进行多GPU训练")
@@ -391,8 +445,12 @@ def main():
         "use_fast": model_args.use_fast_tokenizer,
         "trust_remote_code": model_args.trust_remote_code,
     }
-    tokenizer_name_or_path = model_args.tokenizer_name_or_path or model_args.model_name_or_path
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path, **tokenizer_kwargs)
+    tokenizer_name_or_path = (
+        model_args.tokenizer_name_or_path or model_args.model_name_or_path
+    )
+    tokenizer = AutoTokenizer.from_pretrained(
+        tokenizer_name_or_path, **tokenizer_kwargs
+    )
 
     # 设置特殊token
     prompt_template = get_conv_template(script_args.template_name)
@@ -413,7 +471,11 @@ def main():
             tokenizer.pad_token = tokenizer.eos_token
         logger.info(f"Add pad_token: {tokenizer.pad_token}")
 
-    IGNORE_INDEX = LabelSmoother.ignore_index if data_args.ignore_pad_token_for_loss else tokenizer.pad_token_id
+    IGNORE_INDEX = (
+        LabelSmoother.ignore_index
+        if data_args.ignore_pad_token_for_loss
+        else tokenizer.pad_token_id
+    )
 
     logger.info("✅ Tokenizer配置完成")
 
@@ -431,7 +493,7 @@ def main():
             load_in_4bit=True,
             bnb_4bit_compute_dtype=torch_dtype,
             bnb_4bit_use_double_quant=True,
-            bnb_4bit_quant_type="nf4"
+            bnb_4bit_quant_type="nf4",
         )
     elif model_args.load_in_8bit:
         quantization_config = BitsAndBytesConfig(load_in_8bit=True)
@@ -457,13 +519,14 @@ def main():
         logger.info(f"检测到 {num_gpus} 个GPU")
 
         for i in range(num_gpus):
-            gpu_memory = torch.cuda.get_device_properties(i).total_memory / 1024 ** 3
-            allocated = torch.cuda.memory_allocated(i) / 1024 ** 3
-            cached = torch.cuda.memory_reserved(i) / 1024 ** 3
+            gpu_memory = torch.cuda.get_device_properties(i).total_memory / 1024**3
+            allocated = torch.cuda.memory_allocated(i) / 1024**3
+            cached = torch.cuda.memory_reserved(i) / 1024**3
             free = gpu_memory - allocated
             total_memory += gpu_memory
             logger.info(
-                f"GPU {i}: 总内存={gpu_memory:.1f}GB, 已分配={allocated:.1f}GB, 缓存={cached:.1f}GB, 可用={free:.1f}GB")
+                f"GPU {i}: 总内存={gpu_memory:.1f}GB, 已分配={allocated:.1f}GB, 缓存={cached:.1f}GB, 可用={free:.1f}GB"
+            )
 
         logger.info(f"总GPU内存: {total_memory:.1f}GB")
 
@@ -473,21 +536,21 @@ def main():
 
     # 估算模型大小（粗略估算）
     estimated_model_size_gb = 0
-    if hasattr(config, 'num_parameters'):
+    if hasattr(config, "num_parameters"):
         # 如果配置中有参数数量信息
-        estimated_model_size_gb = config.num_parameters * 2 / 1024 ** 3  # 假设fp16
+        estimated_model_size_gb = config.num_parameters * 2 / 1024**3  # 假设fp16
     else:
         # 根据模型名称粗略估算
         model_name_lower = model_args.model_name_or_path.lower()
-        if '70b' in model_name_lower or '72b' in model_name_lower:
+        if "70b" in model_name_lower or "72b" in model_name_lower:
             estimated_model_size_gb = 140  # 70B模型大约140GB
-        elif '32b' in model_name_lower or '34b' in model_name_lower:
+        elif "32b" in model_name_lower or "34b" in model_name_lower:
             estimated_model_size_gb = 64  # 32B模型大约64GB
-        elif '13b' in model_name_lower or '14b' in model_name_lower:
+        elif "13b" in model_name_lower or "14b" in model_name_lower:
             estimated_model_size_gb = 26  # 13B模型大约26GB
-        elif '7b' in model_name_lower or '8b' in model_name_lower:
+        elif "7b" in model_name_lower or "8b" in model_name_lower:
             estimated_model_size_gb = 14  # 7B模型大约14GB
-        elif '3b' in model_name_lower:
+        elif "3b" in model_name_lower:
             estimated_model_size_gb = 6  # 3B模型大约6GB
         else:
             estimated_model_size_gb = 10  # 默认估算
@@ -502,21 +565,30 @@ def main():
     if is_distributed:
         if script_args.use_tensor_parallel and estimated_model_size_gb > 20:
             # 用户选择使用张量并行且模型足够大
-            logger.info(f"🔧 使用张量并行策略 (模型大小: {estimated_model_size_gb:.1f}GB)")
+            logger.info(
+                f"🔧 使用张量并行策略 (模型大小: {estimated_model_size_gb:.1f}GB)"
+            )
             use_tensor_parallel = True
 
             # 检查PyTorch版本是否支持张量并行
             import pkg_resources
+
             torch_version = pkg_resources.get_distribution("torch").version
-            if pkg_resources.parse_version(torch_version) < pkg_resources.parse_version("2.5.0"):
-                logger.warning(f"⚠️ 当前PyTorch版本 {torch_version} 不支持张量并行，需要 >= 2.5.0")
+            if pkg_resources.parse_version(torch_version) < pkg_resources.parse_version(
+                "2.5.0"
+            ):
+                logger.warning(
+                    f"⚠️ 当前PyTorch版本 {torch_version} 不支持张量并行，需要 >= 2.5.0"
+                )
                 logger.warning("⚠️ 自动切换到DDP模式")
                 use_tensor_parallel = False
             else:
                 logger.info(f"✅ PyTorch版本 {torch_version} 支持张量并行")
         else:
             # 使用DDP
-            logger.info(f"🔧 使用DDP进行多GPU训练 (模型大小: {estimated_model_size_gb:.1f}GB)")
+            logger.info(
+                f"🔧 使用DDP进行多GPU训练 (模型大小: {estimated_model_size_gb:.1f}GB)"
+            )
             use_tensor_parallel = False
     else:
         # 单进程，可以使用device_map="auto"
@@ -544,7 +616,7 @@ def main():
                 total_mem = gpu_props.total_memory
                 # 预留20%内存给训练时的梯度、优化器状态等
                 usable_mem = int(total_mem * 0.8)
-                max_memory[i] = f"{usable_mem // (1024 ** 3)}GiB"
+                max_memory[i] = f"{usable_mem // (1024**3)}GiB"
 
             model_kwargs["max_memory"] = max_memory
             logger.info(f"🔧 张量并行配置:")
@@ -558,8 +630,7 @@ def main():
     # 加载模型
     try:
         model = AutoModelForCausalLM.from_pretrained(
-            model_args.model_name_or_path,
-            **model_kwargs
+            model_args.model_name_or_path, **model_kwargs
         )
         logger.info("✅ 模型加载完成")
     except OSError as e:
@@ -573,8 +644,7 @@ def main():
                 del model_kwargs["max_memory"]
 
             model = AutoModelForCausalLM.from_pretrained(
-                model_args.model_name_or_path,
-                **model_kwargs
+                model_args.model_name_or_path, **model_kwargs
             )
             logger.info("✅ 使用DDP模式加载模型成功")
         else:
@@ -582,7 +652,7 @@ def main():
 
     # 显示模型分布信息
     logger.info("📊 模型分布情况:")
-    if hasattr(model, 'hf_device_map') and model.hf_device_map:
+    if hasattr(model, "hf_device_map") and model.hf_device_map:
         logger.info("🔧 使用HuggingFace设备映射:")
         for module_name, device in model.hf_device_map.items():
             logger.info(f"  {module_name}: {device}")
@@ -603,44 +673,57 @@ def main():
         for name, param in model.named_parameters():
             device = str(param.device)
             if device not in device_params:
-                device_params[device] = {'count': 0, 'size': 0}
-            device_params[device]['count'] += 1
-            device_params[device]['size'] += param.numel()
+                device_params[device] = {"count": 0, "size": 0}
+            device_params[device]["count"] += 1
+            device_params[device]["size"] += param.numel()
             total_params += param.numel()
 
         logger.info("📈 参数设备分布:")
         for device, info in device_params.items():
-            param_size_gb = info['size'] * 4 / 1024 ** 3  # 假设float32
-            percentage = info['size'] / total_params * 100
-            logger.info(f"  {device}: {info['count']} 个参数组, {param_size_gb:.2f}GB ({percentage:.1f}%)")
+            param_size_gb = info["size"] * 4 / 1024**3  # 假设float32
+            percentage = info["size"] / total_params * 100
+            logger.info(
+                f"  {device}: {info['count']} 个参数组, {param_size_gb:.2f}GB ({percentage:.1f}%)"
+            )
 
     # 显示GPU内存使用情况
     if torch.cuda.is_available():
         logger.info("💾 GPU内存使用情况:")
         for i in range(torch.cuda.device_count()):
-            allocated = torch.cuda.memory_allocated(i) / 1024 ** 3
-            cached = torch.cuda.memory_reserved(i) / 1024 ** 3
-            total = torch.cuda.get_device_properties(i).total_memory / 1024 ** 3
-            logger.info(f"  GPU {i}: 已分配={allocated:.1f}GB, 缓存={cached:.1f}GB, 总计={total:.1f}GB")
+            allocated = torch.cuda.memory_allocated(i) / 1024**3
+            cached = torch.cuda.memory_reserved(i) / 1024**3
+            total = torch.cuda.get_device_properties(i).total_memory / 1024**3
+            logger.info(
+                f"  GPU {i}: 已分配={allocated:.1f}GB, 缓存={cached:.1f}GB, 总计={total:.1f}GB"
+            )
 
     # 配置PEFT
     if script_args.use_peft:
         logger.info("🔧 配置LoRA")
 
         if script_args.peft_path is not None:
-            model = PeftModel.from_pretrained(model, script_args.peft_path, is_trainable=True)
+            model = PeftModel.from_pretrained(
+                model, script_args.peft_path, is_trainable=True
+            )
         else:
             if model_args.load_in_8bit or model_args.load_in_4bit:
-                model = prepare_model_for_kbit_training(model, training_args.gradient_checkpointing)
+                model = prepare_model_for_kbit_training(
+                    model, training_args.gradient_checkpointing
+                )
 
-            target_modules = script_args.target_modules.split(',') if script_args.target_modules else None
-            if target_modules and 'all' in target_modules:
-                target_modules = find_all_linear_names(model, int4=model_args.load_in_4bit,
-                                                       int8=model_args.load_in_8bit)
+            target_modules = (
+                script_args.target_modules.split(",")
+                if script_args.target_modules
+                else None
+            )
+            if target_modules and "all" in target_modules:
+                target_modules = find_all_linear_names(
+                    model, int4=model_args.load_in_4bit, int8=model_args.load_in_8bit
+                )
 
             modules_to_save = script_args.modules_to_save
             if modules_to_save is not None:
-                modules_to_save = modules_to_save.split(',')
+                modules_to_save = modules_to_save.split(",")
 
             peft_config = LoraConfig(
                 task_type=TaskType.CAUSAL_LM,
@@ -649,7 +732,7 @@ def main():
                 r=script_args.lora_rank,
                 lora_alpha=script_args.lora_alpha,
                 lora_dropout=script_args.lora_dropout,
-                modules_to_save=modules_to_save
+                modules_to_save=modules_to_save,
             )
             model = get_peft_model(model, peft_config)
 
@@ -668,7 +751,9 @@ def main():
 
     # 预处理数据集
     logger.info("🔄 开始预处理数据集...")
-    preprocess_function = create_preprocess_function(tokenizer, prompt_template, script_args, IGNORE_INDEX)
+    preprocess_function = create_preprocess_function(
+        tokenizer, prompt_template, script_args, IGNORE_INDEX
+    )
 
     # 处理训练数据
     train_dataset = None
@@ -676,7 +761,7 @@ def main():
     if training_args.do_train:
         if "train" not in raw_datasets:
             raise ValueError("--do_train requires a train dataset")
-        train_dataset = raw_datasets['train'].shuffle(seed=42)
+        train_dataset = raw_datasets["train"].shuffle(seed=42)
         max_train_samples = len(train_dataset)
         if data_args.max_train_samples is not None and data_args.max_train_samples > 0:
             max_train_samples = min(len(train_dataset), data_args.max_train_samples)
@@ -694,14 +779,18 @@ def main():
         )
         train_dataset = tokenized_dataset.filter(
             lambda example: filter_empty_labels(example, IGNORE_INDEX),
-            num_proc=data_args.preprocessing_num_workers
+            num_proc=data_args.preprocessing_num_workers,
         )
 
         logger.debug(f"Num train_samples: {len(train_dataset)}")
         logger.debug("Tokenized training example:")
-        logger.debug(f"Decode input_ids[0]:\n{tokenizer.decode(train_dataset[0]['input_ids'])}")
-        replaced_labels = [label if label != IGNORE_INDEX else tokenizer.pad_token_id
-                           for label in list(train_dataset[0]['labels'])]
+        logger.debug(
+            f"Decode input_ids[0]:\n{tokenizer.decode(train_dataset[0]['input_ids'])}"
+        )
+        replaced_labels = [
+            label if label != IGNORE_INDEX else tokenizer.pad_token_id
+            for label in list(train_dataset[0]["labels"])
+        ]
         logger.debug(f"Decode labels[0]:\n{tokenizer.decode(replaced_labels)}")
 
     # 处理验证数据
@@ -718,8 +807,10 @@ def main():
         eval_size = len(eval_dataset)
         logger.debug(f"Num eval_samples: {eval_size}")
         if eval_size > 500:
-            logger.warning(f"Num eval_samples is large: {eval_size}, "
-                           f"training slow, consider reduce it by `--max_eval_samples=50`")
+            logger.warning(
+                f"Num eval_samples is large: {eval_size}, "
+                f"training slow, consider reduce it by `--max_eval_samples=50`"
+            )
         logger.debug(f"Example eval_dataset[0]: {eval_dataset[0]}")
         eval_dataset = eval_dataset.map(
             preprocess_function,
@@ -731,11 +822,11 @@ def main():
         )
         eval_dataset = eval_dataset.filter(
             lambda example: filter_empty_labels(example, IGNORE_INDEX),
-            num_proc=data_args.preprocessing_num_workers
+            num_proc=data_args.preprocessing_num_workers,
         )
         logger.debug(f"Num eval_samples: {len(eval_dataset)}")
         logger.debug("Tokenized eval example:")
-        logger.debug(tokenizer.decode(eval_dataset[0]['input_ids']))
+        logger.debug(tokenizer.decode(eval_dataset[0]["input_ids"]))
 
     logger.info("✅ 数据集预处理完成")
 
@@ -780,7 +871,9 @@ def main():
         )
 
         # 计算总训练步数
-        num_update_steps_per_epoch = len(train_dataloader) // training_args.gradient_accumulation_steps
+        num_update_steps_per_epoch = (
+            len(train_dataloader) // training_args.gradient_accumulation_steps
+        )
         max_train_steps = training_args.num_train_epochs * num_update_steps_per_epoch
 
         # 设置学习率调度器
@@ -794,7 +887,7 @@ def main():
     logger.info("🔄 开始准备训练组件...")
 
     # 检查模型是否已经分布在多个设备上
-    model_is_distributed = hasattr(model, 'hf_device_map') and model.hf_device_map
+    model_is_distributed = hasattr(model, "hf_device_map") and model.hf_device_map
 
     if model_is_distributed:
         logger.info("🔧 检测到模型已分布在多设备，使用兼容模式")
@@ -830,7 +923,9 @@ def main():
         logger.info("✅ 标准训练组件准备完成")
 
     # 启用梯度检查点
-    if training_args.gradient_checkpointing and getattr(model, "supports_gradient_checkpointing", False):
+    if training_args.gradient_checkpointing and getattr(
+        model, "supports_gradient_checkpointing", False
+    ):
         model.gradient_checkpointing_enable()
         # 对于DDP包装的模型，需要通过module访问原始模型的config
         if hasattr(model, "module"):
@@ -866,11 +961,13 @@ def main():
         progress_bar = tqdm(
             range(int(training_args.num_train_epochs * len(train_dataloader))),
             disable=not accelerator.is_local_main_process,
-            desc="Training"
+            desc="Training",
         )
 
         for epoch in range(int(training_args.num_train_epochs)):
-            logger.info(f"开始第 {epoch + 1}/{int(training_args.num_train_epochs)} 轮训练")
+            logger.info(
+                f"开始第 {epoch + 1}/{int(training_args.num_train_epochs)} 轮训练"
+            )
 
             for step, batch in enumerate(train_dataloader):
                 # 针对张量并行优化的训练步骤
@@ -891,7 +988,9 @@ def main():
                     if (step + 1) % training_args.gradient_accumulation_steps == 0:
                         # 梯度裁剪
                         if training_args.max_grad_norm > 0:
-                            torch.nn.utils.clip_grad_norm_(model.parameters(), training_args.max_grad_norm)
+                            torch.nn.utils.clip_grad_norm_(
+                                model.parameters(), training_args.max_grad_norm
+                            )
 
                         optimizer.step()
                         lr_scheduler.step()
@@ -911,7 +1010,9 @@ def main():
 
                         # 更新参数
                         if accelerator.sync_gradients:
-                            accelerator.clip_grad_norm_(model.parameters(), training_args.max_grad_norm)
+                            accelerator.clip_grad_norm_(
+                                model.parameters(), training_args.max_grad_norm
+                            )
 
                         optimizer.step()
                         lr_scheduler.step()
@@ -927,7 +1028,9 @@ def main():
                 # 检查是否完成了一个完整的训练步骤
                 step_completed = False
                 if model_is_distributed:
-                    step_completed = (step + 1) % training_args.gradient_accumulation_steps == 0
+                    step_completed = (
+                        step + 1
+                    ) % training_args.gradient_accumulation_steps == 0
                 else:
                     step_completed = accelerator.sync_gradients
 
@@ -935,33 +1038,51 @@ def main():
                     # 定期记录日志
                     if completed_steps % training_args.logging_steps == 0:
                         avg_loss = total_loss / training_args.logging_steps
-                        current_lr = lr_scheduler.get_last_lr()[0] if lr_scheduler else training_args.learning_rate
-                        logger.info(f"Step {completed_steps}: loss = {avg_loss:.4f}, lr = {current_lr:.2e}")
+                        current_lr = (
+                            lr_scheduler.get_last_lr()[0]
+                            if lr_scheduler
+                            else training_args.learning_rate
+                        )
+                        logger.info(
+                            f"Step {completed_steps}: loss = {avg_loss:.4f}, lr = {current_lr:.2e}"
+                        )
                         total_loss = 0
 
                     # 定期保存检查点
-                    if training_args.save_steps > 0 and completed_steps % training_args.save_steps == 0:
-                        output_dir = os.path.join(training_args.output_dir, f"checkpoint-{completed_steps}")
+                    if (
+                        training_args.save_steps > 0
+                        and completed_steps % training_args.save_steps == 0
+                    ):
+                        output_dir = os.path.join(
+                            training_args.output_dir, f"checkpoint-{completed_steps}"
+                        )
                         if model_is_distributed:
                             # 分布式模型保存
                             os.makedirs(output_dir, exist_ok=True)
                             model.save_pretrained(output_dir)
                             tokenizer.save_pretrained(output_dir)
                             # 保存优化器状态
-                            torch.save({
-                                'optimizer': optimizer.state_dict(),
-                                'lr_scheduler': lr_scheduler.state_dict() if lr_scheduler else None,
-                                'completed_steps': completed_steps,
-                            }, os.path.join(output_dir, 'training_state.pt'))
+                            torch.save(
+                                {
+                                    "optimizer": optimizer.state_dict(),
+                                    "lr_scheduler": lr_scheduler.state_dict()
+                                    if lr_scheduler
+                                    else None,
+                                    "completed_steps": completed_steps,
+                                },
+                                os.path.join(output_dir, "training_state.pt"),
+                            )
                         else:
                             accelerator.save_state(output_dir)
                         logger.info(f"保存检查点到: {output_dir}")
 
                     # 定期评估
-                    if (training_args.do_eval and
-                            training_args.eval_steps > 0 and
-                            completed_steps % training_args.eval_steps == 0 and
-                            eval_dataloader is not None):
+                    if (
+                        training_args.do_eval
+                        and training_args.eval_steps > 0
+                        and completed_steps % training_args.eval_steps == 0
+                        and eval_dataloader is not None
+                    ):
                         model.eval()
                         eval_loss = 0
                         eval_steps = 0
@@ -979,7 +1100,8 @@ def main():
                             perplexity = float("inf")
 
                         logger.info(
-                            f"Step {completed_steps}: eval_loss = {avg_eval_loss:.4f}, perplexity = {perplexity:.2f}")
+                            f"Step {completed_steps}: eval_loss = {avg_eval_loss:.4f}, perplexity = {perplexity:.2f}"
+                        )
                         model.train()
         progress_bar.close()
 
@@ -1026,7 +1148,9 @@ def main():
         except OverflowError:
             perplexity = float("inf")
         if accelerator.is_main_process:
-            logger.info(f"最终评估结果: eval_loss = {avg_eval_loss:.4f}, perplexity = {perplexity:.2f}")
+            logger.info(
+                f"最终评估结果: eval_loss = {avg_eval_loss:.4f}, perplexity = {perplexity:.2f}"
+            )
 
 
 if __name__ == "__main__":

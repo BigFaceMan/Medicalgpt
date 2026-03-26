@@ -161,6 +161,8 @@ if __name__ == "__main__":
         trust_remote_code=True
     )
 
+    Qwen2ForCausalLM
+
     dataset = load_jsonl_data(args.data_path)
 
     evaluate_perplexity(model, tokenizer, dataset)

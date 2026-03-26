@@ -33,23 +33,62 @@ class RLOOArguments:
     """
     The name of the Casual LM model we wish to fine with RLOO
     """
-    sft_model_path: Optional[str] = field(default=None, metadata={"help": "Path to the SFT model."})
-    reward_model_path: Optional[str] = field(default=None, metadata={"help": "Path to the reward model."})
-    dataset_name: Optional[str] = field(default=None, metadata={"help": "Dataset name."})
-    dataset_config: Optional[str] = field(default=None, metadata={"help": "Dataset configuration name."})
-    dataset_train_split: str = field(default="train", metadata={"help": "Dataset split to use for training."})
-    dataset_test_split: str = field(default="test", metadata={"help": "Dataset split to use for evaluation."})
-    train_file_dir: Optional[str] = field(default=None, metadata={"help": "The input jsonl data file folder."})
-    validation_file_dir: Optional[str] = field(default=None, metadata={"help": "The evaluation jsonl file folder."}, )
-    template_name: Optional[str] = field(default="vicuna", metadata={"help": "The template name."})
-    max_source_length: Optional[int] = field(default=1024, metadata={"help": "Max length of prompt input text"})
+
+    sft_model_path: Optional[str] = field(
+        default=None, metadata={"help": "Path to the SFT model."}
+    )
+    reward_model_path: Optional[str] = field(
+        default=None, metadata={"help": "Path to the reward model."}
+    )
+    dataset_name: Optional[str] = field(
+        default=None, metadata={"help": "Dataset name."}
+    )
+    dataset_config: Optional[str] = field(
+        default=None, metadata={"help": "Dataset configuration name."}
+    )
+    dataset_train_split: str = field(
+        default="train", metadata={"help": "Dataset split to use for training."}
+    )
+    dataset_test_split: str = field(
+        default="test", metadata={"help": "Dataset split to use for evaluation."}
+    )
+    train_file_dir: Optional[str] = field(
+        default=None, metadata={"help": "The input jsonl data file folder."}
+    )
+    validation_file_dir: Optional[str] = field(
+        default=None,
+        metadata={"help": "The evaluation jsonl file folder."},
+    )
+    template_name: Optional[str] = field(
+        default="vicuna", metadata={"help": "The template name."}
+    )
+    max_source_length: Optional[int] = field(
+        default=1024, metadata={"help": "Max length of prompt input text"}
+    )
 
 
 def main():
     parser = HfArgumentParser((RLOOArguments, RLOOConfig, ModelConfig))
-    args, training_args, model_args = parser.parse_args_into_dataclasses(
-        return_remaining_strings=True
-    )[:3]
+
+    config_file = None
+    if "--config" in sys.argv:
+        config_idx = sys.argv.index("--config")
+        config_file = sys.argv[config_idx + 1]
+        sys.argv = sys.argv[:config_idx] + sys.argv[config_idx + 2 :]
+
+    if config_file:
+        if config_file.endswith(".json"):
+            args, training_args, model_args = parser.parse_json_file(
+                json_file=os.path.abspath(config_file)
+            )
+        else:
+            args, training_args, model_args = parser.parse_yaml_file(
+                yaml_file=os.path.abspath(config_file)
+            )
+    else:
+        args, training_args, model_args = parser.parse_args_into_dataclasses(
+            return_remaining_strings=True
+        )[:3]
 
     # Add distributed training initialization
     local_rank = int(os.environ.get("LOCAL_RANK", "0"))
@@ -67,24 +106,36 @@ def main():
         sft_model_path, trust_remote_code=model_args.trust_remote_code
     )
     if tokenizer.eos_token_id is None:
-        tokenizer.eos_token = tokenizer.eos_token if tokenizer.eos_token is not None else tokenizer.sep_token
+        tokenizer.eos_token = (
+            tokenizer.eos_token
+            if tokenizer.eos_token is not None
+            else tokenizer.sep_token
+        )
         tokenizer.add_special_tokens({"eos_token": tokenizer.eos_token})
-        logger.info(f"Add eos_token: {tokenizer.eos_token}, eos_token_id: {tokenizer.eos_token_id}")
+        logger.info(
+            f"Add eos_token: {tokenizer.eos_token}, eos_token_id: {tokenizer.eos_token_id}"
+        )
     if tokenizer.bos_token_id is None:
         tokenizer.add_special_tokens({"bos_token": tokenizer.eos_token})
         tokenizer.bos_token_id = tokenizer.eos_token_id
-        logger.info(f"Add bos_token: {tokenizer.bos_token}, bos_token_id: {tokenizer.bos_token_id}")
+        logger.info(
+            f"Add bos_token: {tokenizer.bos_token}, bos_token_id: {tokenizer.bos_token_id}"
+        )
     if tokenizer.pad_token_id is None:
         if tokenizer.unk_token_id is not None:
             tokenizer.pad_token = tokenizer.unk_token
         else:
             tokenizer.pad_token = tokenizer.eos_token
-        logger.info(f"Add pad_token: {tokenizer.pad_token}, pad_token_id: {tokenizer.pad_token_id}")
+        logger.info(
+            f"Add pad_token: {tokenizer.pad_token}, pad_token_id: {tokenizer.pad_token_id}"
+        )
     logger.debug(f"Tokenizer: {tokenizer}")
 
     # Load reward model as reward function
     reward_model = AutoModelForSequenceClassification.from_pretrained(
-        args.reward_model_path, trust_remote_code=model_args.trust_remote_code, num_labels=1
+        args.reward_model_path,
+        trust_remote_code=model_args.trust_remote_code,
+        num_labels=1,
     )
 
     # Load policy model
@@ -99,9 +150,7 @@ def main():
     if args.dataset_name is not None:
         # Downloading and loading a dataset from the hub.
         dataset = load_dataset(
-            args.dataset_name,
-            args.dataset_config,
-            split=args.dataset_train_split
+            args.dataset_name, args.dataset_config, split=args.dataset_train_split
         )
         eval_samples = 100
         train_dataset = dataset.select(range(len(dataset) - eval_samples))
@@ -109,17 +158,21 @@ def main():
     else:
         data_files = {}
         if args.train_file_dir is not None and os.path.exists(args.train_file_dir):
-            train_data_files = glob(f'{args.train_file_dir}/**/*.json', recursive=True) + glob(
-                f'{args.train_file_dir}/**/*.jsonl', recursive=True)
+            train_data_files = glob(
+                f"{args.train_file_dir}/**/*.json", recursive=True
+            ) + glob(f"{args.train_file_dir}/**/*.jsonl", recursive=True)
             logger.info(f"train files: {', '.join(train_data_files)}")
             data_files["train"] = train_data_files
-        if args.validation_file_dir is not None and os.path.exists(args.validation_file_dir):
-            eval_data_files = glob(f'{args.validation_file_dir}/**/*.json', recursive=True) + glob(
-                f'{args.validation_file_dir}/**/*.jsonl', recursive=True)
+        if args.validation_file_dir is not None and os.path.exists(
+            args.validation_file_dir
+        ):
+            eval_data_files = glob(
+                f"{args.validation_file_dir}/**/*.json", recursive=True
+            ) + glob(f"{args.validation_file_dir}/**/*.jsonl", recursive=True)
             logger.info(f"eval files: {', '.join(eval_data_files)}")
             data_files["validation"] = eval_data_files
         dataset = load_dataset(
-            'json',
+            "json",
             data_files=data_files,
         )
         train_dataset = dataset["train"]
@@ -136,7 +189,7 @@ def main():
 
         def get_dialog(examples):
             system_prompts = examples.get("system_prompt", "")
-            for i, source in enumerate(examples['conversations']):
+            for i, source in enumerate(examples["conversations"]):
                 if len(source) < 2:
                     continue
                 data_role = source[0].get("from", "")
@@ -156,9 +209,13 @@ def main():
                 if len(messages) < 2 or len(messages) % 2 != 0:
                     continue
                 # Convert the list to pairs of elements
-                history_messages = [[messages[k], messages[k + 1]] for k in range(0, len(messages), 2)]
+                history_messages = [
+                    [messages[k], messages[k + 1]] for k in range(0, len(messages), 2)
+                ]
                 system_prompt = system_prompts[i] if system_prompts else None
-                yield prompt_template.get_dialog(history_messages, system_prompt=system_prompt)
+                yield prompt_template.get_dialog(
+                    history_messages, system_prompt=system_prompt
+                )
 
         for dialog in get_dialog(examples):
             for i in range(len(dialog) // 2):
@@ -178,9 +235,7 @@ def main():
             load_from_cache_file=False,
             desc="Running tokenizer on dataset" if is_main_process else None,
         )
-        train_dataset = tokenized_train_dataset.filter(
-            lambda x: len(x['prompt']) > 0
-        )
+        train_dataset = tokenized_train_dataset.filter(lambda x: len(x["prompt"]) > 0)
         logger.debug(f"Train samples top3: {train_dataset[:3]}")
 
         # Preprocess the dataset for evaluation
@@ -193,9 +248,7 @@ def main():
             load_from_cache_file=False,
             desc="Running tokenizer on dataset" if is_main_process else None,
         )
-        eval_dataset = tokenized_eval_dataset.filter(
-            lambda x: len(x['prompt']) > 0
-        )
+        eval_dataset = tokenized_eval_dataset.filter(lambda x: len(x["prompt"]) > 0)
         logger.debug(f"Eval samples top3: {eval_dataset[:3]}")
 
     # We then build the RLOOTrainer, passing the model, the reward function, the tokenizer

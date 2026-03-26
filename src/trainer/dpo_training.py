@@ -3,7 +3,9 @@
 @author:XuMing(xuming624@qq.com)
 @description: Train a model from SFT using DPO
 """
+
 import os
+import sys
 from copy import deepcopy
 from dataclasses import dataclass, field
 from glob import glob
@@ -35,22 +37,34 @@ class ScriptArguments:
     """
     The name of the Casual LM model we wish to fine with DPO
     """
+
     # Model arguments
     model_name_or_path: Optional[str] = field(
-        default=None, metadata={"help": "The model checkpoint for weights initialization."}
+        default=None,
+        metadata={"help": "The model checkpoint for weights initialization."},
     )
     tokenizer_name_or_path: Optional[str] = field(
         default=None, metadata={"help": "The tokenizer for weights initialization."}
     )
-    load_in_8bit: bool = field(default=False, metadata={"help": "Whether to load the model in 8bit mode or not."})
-    load_in_4bit: bool = field(default=False, metadata={"help": "Whether to load the model in 4bit mode or not."})
+    load_in_8bit: bool = field(
+        default=False,
+        metadata={"help": "Whether to load the model in 8bit mode or not."},
+    )
+    load_in_4bit: bool = field(
+        default=False,
+        metadata={"help": "Whether to load the model in 4bit mode or not."},
+    )
     cache_dir: Optional[str] = field(
         default=None,
-        metadata={"help": "Where do you want to store the pretrained models downloaded from huggingface.co"},
+        metadata={
+            "help": "Where do you want to store the pretrained models downloaded from huggingface.co"
+        },
     )
     use_fast_tokenizer: bool = field(
         default=False,
-        metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
+        metadata={
+            "help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."
+        },
     )
     torch_dtype: Optional[str] = field(
         default=None,
@@ -64,27 +78,52 @@ class ScriptArguments:
     )
     device_map: Optional[str] = field(
         default="auto",
-        metadata={"help": "Device to map model to. If `auto` is passed, the device will be selected automatically. "},
+        metadata={
+            "help": "Device to map model to. If `auto` is passed, the device will be selected automatically. "
+        },
     )
     trust_remote_code: bool = field(
         default=True,
-        metadata={"help": "Whether to trust remote code when loading a model from a remote checkpoint."},
+        metadata={
+            "help": "Whether to trust remote code when loading a model from a remote checkpoint."
+        },
     )
     # Dataset arguments
     dataset_name: Optional[str] = field(
-        default=None, metadata={"help": "The name of the dataset to use (via the datasets library)."}
+        default=None,
+        metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
     dataset_config_name: Optional[str] = field(
-        default=None, metadata={"help": "The configuration name of the dataset to use (via the datasets library)."}
+        default=None,
+        metadata={
+            "help": "The configuration name of the dataset to use (via the datasets library)."
+        },
     )
-    train_file_dir: Optional[str] = field(default=None, metadata={"help": "The input jsonl data file folder."})
-    validation_file_dir: Optional[str] = field(default=None, metadata={"help": "The evaluation jsonl file folder."}, )
-    template_name: Optional[str] = field(default="vicuna", metadata={"help": "The prompt template name."})
-    per_device_train_batch_size: Optional[int] = field(default=4, metadata={"help": "Train batch size per device"})
-    per_device_eval_batch_size: Optional[int] = field(default=1, metadata={"help": "Eval batch size per device"})
-    max_source_length: Optional[int] = field(default=2048, metadata={"help": "Max length of prompt input text"})
-    max_target_length: Optional[int] = field(default=512, metadata={"help": "Max length of output text"})
-    min_target_length: Optional[int] = field(default=4, metadata={"help": "Min length of output text"})
+    train_file_dir: Optional[str] = field(
+        default=None, metadata={"help": "The input jsonl data file folder."}
+    )
+    validation_file_dir: Optional[str] = field(
+        default=None,
+        metadata={"help": "The evaluation jsonl file folder."},
+    )
+    template_name: Optional[str] = field(
+        default="vicuna", metadata={"help": "The prompt template name."}
+    )
+    per_device_train_batch_size: Optional[int] = field(
+        default=4, metadata={"help": "Train batch size per device"}
+    )
+    per_device_eval_batch_size: Optional[int] = field(
+        default=1, metadata={"help": "Eval batch size per device"}
+    )
+    max_source_length: Optional[int] = field(
+        default=2048, metadata={"help": "Max length of prompt input text"}
+    )
+    max_target_length: Optional[int] = field(
+        default=512, metadata={"help": "Max length of output text"}
+    )
+    min_target_length: Optional[int] = field(
+        default=4, metadata={"help": "Min length of output text"}
+    )
     max_train_samples: Optional[int] = field(
         default=None,
         metadata={
@@ -104,7 +143,8 @@ class ScriptArguments:
         },
     )
     overwrite_cache: bool = field(
-        default=False, metadata={"help": "Overwrite the cached training and evaluation sets"}
+        default=False,
+        metadata={"help": "Overwrite the cached training and evaluation sets"},
     )
     validation_split_percentage: Optional[int] = field(
         default=1,
@@ -113,7 +153,8 @@ class ScriptArguments:
         },
     )
     preprocessing_num_workers: Optional[int] = field(
-        default=4, metadata={"help": "The number of processes to use for the preprocessing."},
+        default=4,
+        metadata={"help": "The number of processes to use for the preprocessing."},
     )
     # Training arguments
     use_peft: bool = field(default=True, metadata={"help": "Whether to use peft"})
@@ -124,35 +165,67 @@ class ScriptArguments:
     lora_alpha: Optional[float] = field(default=16.0)
     peft_path: Optional[str] = field(default=None)
     do_train: bool = field(default=False, metadata={"help": "Whether to run training."})
-    do_eval: bool = field(default=False, metadata={"help": "Whether to run eval on the validation set."})
-    learning_rate: Optional[float] = field(default=5e-4, metadata={"help": "Learning rate"})
-    lr_scheduler_type: Optional[str] = field(default="cosine", metadata={"help": "The lr scheduler type"})
-    warmup_steps: Optional[int] = field(default=100, metadata={"help": "The number of warmup steps"})
-    weight_decay: Optional[float] = field(default=0.05, metadata={"help": "The weight decay"})
-    optim: Optional[str] = field(default="adamw_torch", metadata={"help": "The optimizer type"})
+    do_eval: bool = field(
+        default=False, metadata={"help": "Whether to run eval on the validation set."}
+    )
+    learning_rate: Optional[float] = field(
+        default=5e-4, metadata={"help": "Learning rate"}
+    )
+    lr_scheduler_type: Optional[str] = field(
+        default="cosine", metadata={"help": "The lr scheduler type"}
+    )
+    warmup_steps: Optional[int] = field(
+        default=100, metadata={"help": "The number of warmup steps"}
+    )
+    weight_decay: Optional[float] = field(
+        default=0.05, metadata={"help": "The weight decay"}
+    )
+    optim: Optional[str] = field(
+        default="adamw_torch", metadata={"help": "The optimizer type"}
+    )
     fp16: Optional[bool] = field(default=True, metadata={"help": "Whether to use fp16"})
-    bf16: Optional[bool] = field(default=False, metadata={"help": "Whether to use bf16"})
+    bf16: Optional[bool] = field(
+        default=False, metadata={"help": "Whether to use bf16"}
+    )
     gradient_checkpointing: Optional[bool] = field(
         default=True, metadata={"help": "Whether to use gradient checkpointing"}
     )
     gradient_accumulation_steps: Optional[int] = field(
         default=4, metadata={"help": "The number of gradient accumulation steps"}
     )
-    save_steps: Optional[int] = field(default=50, metadata={"help": "X steps to save the model"})
-    eval_steps: Optional[int] = field(default=50, metadata={"help": "X steps to evaluate the model"})
-    logging_steps: Optional[int] = field(default=1, metadata={"help": "X steps to log the model"})
-    output_dir: Optional[str] = field(default="outputs-dpo", metadata={"help": "The output directory"})
-    max_steps: Optional[int] = field(default=200, metadata={"help": "Number of steps to train"})
-    eval_strategy: Optional[str] = field(default="steps", metadata={"help": "Evaluation strategy"})
+    save_steps: Optional[int] = field(
+        default=50, metadata={"help": "X steps to save the model"}
+    )
+    eval_steps: Optional[int] = field(
+        default=50, metadata={"help": "X steps to evaluate the model"}
+    )
+    logging_steps: Optional[int] = field(
+        default=1, metadata={"help": "X steps to log the model"}
+    )
+    output_dir: Optional[str] = field(
+        default="outputs-dpo", metadata={"help": "The output directory"}
+    )
+    max_steps: Optional[int] = field(
+        default=200, metadata={"help": "Number of steps to train"}
+    )
+    eval_strategy: Optional[str] = field(
+        default="steps", metadata={"help": "Evaluation strategy"}
+    )
     remove_unused_columns: Optional[bool] = field(
         default=False,
-        metadata={"help": "Remove unused columns from the dataset if `datasets.Dataset` is used"},
+        metadata={
+            "help": "Remove unused columns from the dataset if `datasets.Dataset` is used"
+        },
     )
-    report_to: Optional[str] = field(default="tensorboard", metadata={"help": "Report to wandb or tensorboard"})
+    report_to: Optional[str] = field(
+        default="tensorboard", metadata={"help": "Report to wandb or tensorboard"}
+    )
 
     def __post_init__(self):
         if self.model_name_or_path is None:
-            raise ValueError("You must specify a valid model_name_or_path to run training.")
+            raise ValueError(
+                "You must specify a valid model_name_or_path to run training."
+            )
 
 
 def print_trainable_parameters(model):
@@ -175,6 +248,7 @@ def find_all_linear_names(peft_model, int4=False, int8=False):
     cls = torch.nn.Linear
     if int4 or int8:
         import bitsandbytes as bnb
+
         if int4:
             cls = bnb.nn.Linear4bit
         elif int8:
@@ -183,18 +257,31 @@ def find_all_linear_names(peft_model, int4=False, int8=False):
     for name, module in peft_model.named_modules():
         if isinstance(module, cls):
             # last layer is not add to lora_module_names
-            if 'lm_head' in name:
+            if "lm_head" in name:
                 continue
-            if 'output_layer' in name:
+            if "output_layer" in name:
                 continue
-            names = name.split('.')
+            names = name.split(".")
             lora_module_names.add(names[0] if len(names) == 1 else names[-1])
     return sorted(lora_module_names)
 
 
 def main():
     parser = HfArgumentParser(ScriptArguments)
-    args = parser.parse_args_into_dataclasses(return_remaining_strings=True)[0]
+
+    config_file = None
+    if "--config" in sys.argv:
+        config_idx = sys.argv.index("--config")
+        config_file = sys.argv[config_idx + 1]
+        sys.argv = sys.argv[:config_idx] + sys.argv[config_idx + 2 :]
+
+    if config_file:
+        if config_file.endswith(".json"):
+            args = parser.parse_json_file(json_file=os.path.abspath(config_file))
+        else:
+            args = parser.parse_yaml_file(yaml_file=os.path.abspath(config_file))
+    else:
+        args = parser.parse_args_into_dataclasses(return_remaining_strings=True)[0]
     logger.info(f"Parse args: {args}")
 
     # Load tokenizer
@@ -206,22 +293,30 @@ def main():
     tokenizer_name_or_path = args.tokenizer_name_or_path
     if not tokenizer_name_or_path:
         tokenizer_name_or_path = args.model_name_or_path
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path, **tokenizer_kwargs)
+    tokenizer = AutoTokenizer.from_pretrained(
+        tokenizer_name_or_path, **tokenizer_kwargs
+    )
     prompt_template = get_conv_template(args.template_name)
     if tokenizer.eos_token_id is None:
         tokenizer.eos_token = prompt_template.stop_str  # eos token is required
         tokenizer.add_special_tokens({"eos_token": tokenizer.eos_token})
-        logger.info(f"Add eos_token: {tokenizer.eos_token}, eos_token_id: {tokenizer.eos_token_id}")
+        logger.info(
+            f"Add eos_token: {tokenizer.eos_token}, eos_token_id: {tokenizer.eos_token_id}"
+        )
     if tokenizer.bos_token_id is None:
         tokenizer.add_special_tokens({"bos_token": tokenizer.eos_token})
         tokenizer.bos_token_id = tokenizer.eos_token_id
-        logger.info(f"Add bos_token: {tokenizer.bos_token}, bos_token_id: {tokenizer.bos_token_id}")
+        logger.info(
+            f"Add bos_token: {tokenizer.bos_token}, bos_token_id: {tokenizer.bos_token_id}"
+        )
     if tokenizer.pad_token_id is None:
         if tokenizer.unk_token_id is not None:
             tokenizer.pad_token = tokenizer.unk_token
         else:
             tokenizer.pad_token = tokenizer.eos_token
-        logger.info(f"Add pad_token: {tokenizer.pad_token}, pad_token_id: {tokenizer.pad_token_id}")
+        logger.info(
+            f"Add pad_token: {tokenizer.pad_token}, pad_token_id: {tokenizer.pad_token_id}"
+        )
     logger.debug(f"Tokenizer: {tokenizer}")
 
     # Get datasets
@@ -248,30 +343,34 @@ def main():
     else:
         data_files = {}
         if args.train_file_dir is not None and os.path.exists(args.train_file_dir):
-            train_data_files = glob(f'{args.train_file_dir}/**/*.json', recursive=True) + glob(
-                f'{args.train_file_dir}/**/*.jsonl', recursive=True)
+            train_data_files = glob(
+                f"{args.train_file_dir}/**/*.json", recursive=True
+            ) + glob(f"{args.train_file_dir}/**/*.jsonl", recursive=True)
             logger.info(f"train files: {', '.join(train_data_files)}")
             data_files["train"] = train_data_files
-        if args.validation_file_dir is not None and os.path.exists(args.validation_file_dir):
-            eval_data_files = glob(f'{args.validation_file_dir}/**/*.json', recursive=True) + glob(
-                f'{args.validation_file_dir}/**/*.jsonl', recursive=True)
+        if args.validation_file_dir is not None and os.path.exists(
+            args.validation_file_dir
+        ):
+            eval_data_files = glob(
+                f"{args.validation_file_dir}/**/*.json", recursive=True
+            ) + glob(f"{args.validation_file_dir}/**/*.jsonl", recursive=True)
             logger.info(f"eval files: {', '.join(eval_data_files)}")
             data_files["validation"] = eval_data_files
         raw_datasets = load_dataset(
-            'json',
+            "json",
             data_files=data_files,
             cache_dir=args.cache_dir,
         )
         # If no validation data is there, validation_split_percentage will be used to divide the dataset.
         if "validation" not in raw_datasets.keys():
             raw_datasets["validation"] = load_dataset(
-                'json',
+                "json",
                 data_files=data_files,
                 split=f"train[:{args.validation_split_percentage}%]",
                 cache_dir=args.cache_dir,
             )
             raw_datasets["train"] = load_dataset(
-                'json',
+                "json",
                 data_files=data_files,
                 split=f"train[{args.validation_split_percentage}%:]",
                 cache_dir=args.cache_dir,
@@ -297,10 +396,18 @@ def main():
           system_prompt + history[[q,a], [q,a]...] + question
         """
         prompts = []
-        for system, history, question in zip(examples["system"], examples["history"], examples["question"]):
+        for system, history, question in zip(
+            examples["system"], examples["history"], examples["question"]
+        ):
             system_prompt = system or ""
-            history_with_question = history + [[question, '']] if history else [[question, '']]
-            prompts.append(prompt_template.get_prompt(messages=history_with_question, system_prompt=system_prompt))
+            history_with_question = (
+                history + [[question, ""]] if history else [[question, ""]]
+            )
+            prompts.append(
+                prompt_template.get_prompt(
+                    messages=history_with_question, system_prompt=system_prompt
+                )
+            )
         return {
             "prompt": prompts,
             "chosen": examples["response_chosen"],
@@ -313,7 +420,7 @@ def main():
     if args.do_train:
         if "train" not in raw_datasets:
             raise ValueError("--do_train requires a train dataset")
-        train_dataset = raw_datasets['train']
+        train_dataset = raw_datasets["train"]
         max_train_samples = len(train_dataset)
         if args.max_train_samples is not None and args.max_train_samples > 0:
             max_train_samples = min(len(train_dataset), args.max_train_samples)
@@ -328,8 +435,8 @@ def main():
             desc="Running tokenizer on dataset",
         )
         train_dataset = tokenized_dataset.filter(
-            lambda x: 0 < len(x['prompt'] + x['chosen']) <= full_max_length
-                      and 0 < len(x['prompt'] + x['rejected']) <= full_max_length
+            lambda x: 0 < len(x["prompt"] + x["chosen"]) <= full_max_length
+            and 0 < len(x["prompt"] + x["rejected"]) <= full_max_length
         )
         logger.debug(f"Num train_samples: {len(train_dataset)}")
         logger.debug("First train example:")
@@ -358,8 +465,8 @@ def main():
             desc="Running tokenizer on dataset",
         )
         eval_dataset = eval_dataset.filter(
-            lambda x: 0 < len(x['prompt'] + x['chosen']) <= full_max_length
-                      and 0 < len(x['prompt'] + x['rejected']) <= full_max_length
+            lambda x: 0 < len(x["prompt"] + x["chosen"]) <= full_max_length
+            and 0 < len(x["prompt"] + x["rejected"]) <= full_max_length
         )
         logger.debug(f"Num eval_samples: {len(eval_dataset)}")
         logger.debug("First eval example:")
@@ -387,10 +494,12 @@ def main():
         args.model_name_or_path,
         trust_remote_code=args.trust_remote_code,
         dtype=torch_dtype,
-        cache_dir=args.cache_dir
+        cache_dir=args.cache_dir,
     )
     if args.load_in_4bit or args.load_in_8bit:
-        logger.info(f"Quantizing model, load_in_4bit: {args.load_in_4bit}, load_in_8bit: {args.load_in_8bit}")
+        logger.info(
+            f"Quantizing model, load_in_4bit: {args.load_in_4bit}, load_in_8bit: {args.load_in_8bit}"
+        )
     model = AutoModelForCausalLM.from_pretrained(
         args.model_name_or_path,
         config=config,
@@ -404,7 +513,9 @@ def main():
             bnb_4bit_use_double_quant=True,
             bnb_4bit_quant_type="nf4",
             bnb_4bit_compute_dtype=torch_dtype,
-        ) if args.qlora else None,
+        )
+        if args.qlora
+        else None,
     )
     # fixed FP16 ValueError
     for param in filter(lambda p: p.requires_grad, model.parameters()):
@@ -444,9 +555,11 @@ def main():
     peft_config = None
     if args.use_peft:
         logger.info("Fine-tuning method: LoRA(PEFT)")
-        target_modules = args.target_modules.split(',') if args.target_modules else None
-        if target_modules and 'all' in target_modules:
-            target_modules = find_all_linear_names(model, int4=args.load_in_4bit, int8=args.load_in_8bit)
+        target_modules = args.target_modules.split(",") if args.target_modules else None
+        if target_modules and "all" in target_modules:
+            target_modules = find_all_linear_names(
+                model, int4=args.load_in_4bit, int8=args.load_in_8bit
+            )
         logger.info(f"Peft target_modules: {target_modules}")
         peft_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,

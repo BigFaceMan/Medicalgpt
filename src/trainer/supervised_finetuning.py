@@ -30,7 +30,13 @@ import torch
 import torch.utils.data
 from datasets import load_dataset
 from loguru import logger
-from peft import LoraConfig, TaskType, get_peft_model, PeftModel, prepare_model_for_kbit_training
+from peft import (
+    LoraConfig,
+    TaskType,
+    get_peft_model,
+    PeftModel,
+    prepare_model_for_kbit_training,
+)
 from transformers import (
     AutoConfig,
     AutoModelForCausalLM,
@@ -74,8 +80,14 @@ class ModelArguments:
             )
         },
     )
-    load_in_8bit: bool = field(default=False, metadata={"help": "Whether to load the model in 8bit mode or not."})
-    load_in_4bit: bool = field(default=False, metadata={"help": "Whether to load the model in 4bit mode or not."})
+    load_in_8bit: bool = field(
+        default=False,
+        metadata={"help": "Whether to load the model in 8bit mode or not."},
+    )
+    load_in_4bit: bool = field(
+        default=False,
+        metadata={"help": "Whether to load the model in 4bit mode or not."},
+    )
     tokenizer_name_or_path: Optional[str] = field(
         default=None,
         metadata={
@@ -86,16 +98,24 @@ class ModelArguments:
     )
     cache_dir: Optional[str] = field(
         default=None,
-        metadata={"help": "Where do you want to store the pretrained models downloaded from huggingface.co"},
+        metadata={
+            "help": "Where do you want to store the pretrained models downloaded from huggingface.co"
+        },
     )
     model_revision: Optional[str] = field(
         default="main",
-        metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
+        metadata={
+            "help": "The specific model version to use (can be a branch name, tag name or commit id)."
+        },
     )
-    hf_hub_token: Optional[str] = field(default=None, metadata={"help": "Auth token to log in with Hugging Face Hub."})
+    hf_hub_token: Optional[str] = field(
+        default=None, metadata={"help": "Auth token to log in with Hugging Face Hub."}
+    )
     use_fast_tokenizer: bool = field(
         default=False,
-        metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
+        metadata={
+            "help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."
+        },
     )
     torch_dtype: Optional[str] = field(
         default="float16",
@@ -109,32 +129,40 @@ class ModelArguments:
     )
     device_map: Optional[str] = field(
         default="auto",
-        metadata={"help": "Device to map model to. If `auto` is passed, the device will be selected automatically. "},
+        metadata={
+            "help": "Device to map model to. If `auto` is passed, the device will be selected automatically. "
+        },
     )
     trust_remote_code: bool = field(
         default=True,
-        metadata={"help": "Whether to trust remote code when loading a model from a remote checkpoint."},
+        metadata={
+            "help": "Whether to trust remote code when loading a model from a remote checkpoint."
+        },
     )
     rope_scaling: Optional[Literal["linear", "dynamic"]] = field(
-        default=None,
-        metadata={"help": "Adopt scaled rotary positional embeddings."}
+        default=None, metadata={"help": "Adopt scaled rotary positional embeddings."}
     )
     flash_attn: Optional[bool] = field(
-        default=False,
-        metadata={"help": "Enable FlashAttention-2 for faster training."}
+        default=False, metadata={"help": "Enable FlashAttention-2 for faster training."}
     )
     shift_attn: Optional[bool] = field(
         default=False,
-        metadata={"help": "Enable shifted sparse attention (S^2-Attn) proposed by LongLoRA."}
+        metadata={
+            "help": "Enable shifted sparse attention (S^2-Attn) proposed by LongLoRA."
+        },
     )
     neft_alpha: Optional[float] = field(
         default=0,
-        metadata={"help": "The alpha parameter to control the noise magnitude in NEFTune. value can be 5."}
+        metadata={
+            "help": "The alpha parameter to control the noise magnitude in NEFTune. value can be 5."
+        },
     )
 
     def __post_init__(self):
         if self.model_name_or_path is None:
-            raise ValueError("You must specify a valid model_name_or_path to run training.")
+            raise ValueError(
+                "You must specify a valid model_name_or_path to run training."
+            )
 
 
 @dataclass
@@ -144,13 +172,21 @@ class DataArguments:
     """
 
     dataset_name: Optional[str] = field(
-        default=None, metadata={"help": "The name of the dataset to use (via the datasets library)."}
+        default=None,
+        metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
     dataset_config_name: Optional[str] = field(
-        default=None, metadata={"help": "The configuration name of the dataset to use (via the datasets library)."}
+        default=None,
+        metadata={
+            "help": "The configuration name of the dataset to use (via the datasets library)."
+        },
     )
-    train_file_dir: Optional[str] = field(default=None, metadata={"help": "The train jsonl data file folder."})
-    validation_file_dir: Optional[str] = field(default=None, metadata={"help": "The evaluation jsonl file folder."})
+    train_file_dir: Optional[str] = field(
+        default=None, metadata={"help": "The train jsonl data file folder."}
+    )
+    validation_file_dir: Optional[str] = field(
+        default=None, metadata={"help": "The evaluation jsonl file folder."}
+    )
     max_train_samples: Optional[int] = field(
         default=None,
         metadata={
@@ -171,10 +207,13 @@ class DataArguments:
     )
     ignore_pad_token_for_loss: bool = field(
         default=True,
-        metadata={"help": "If only pad tokens should be ignored. This assumes that `config.pad_token_id` is defined."},
+        metadata={
+            "help": "If only pad tokens should be ignored. This assumes that `config.pad_token_id` is defined."
+        },
     )
     overwrite_cache: bool = field(
-        default=False, metadata={"help": "Overwrite the cached training and evaluation sets"}
+        default=False,
+        metadata={"help": "Overwrite the cached training and evaluation sets"},
     )
     validation_split_percentage: Optional[int] = field(
         default=1,
@@ -189,29 +228,41 @@ class DataArguments:
 
     def __post_init__(self):
         if self.max_train_samples is not None and 0 < self.max_train_samples <= 1000:
-            logger.warning("You may set max_train_samples = -1 to run all samples in production.")
+            logger.warning(
+                "You may set max_train_samples = -1 to run all samples in production."
+            )
 
 
 @dataclass
 class ScriptArguments:
     use_peft: bool = field(default=True, metadata={"help": "Whether to use peft"})
-    train_on_inputs: bool = field(default=False, metadata={"help": "Whether to train on inputs"})
+    train_on_inputs: bool = field(
+        default=False, metadata={"help": "Whether to train on inputs"}
+    )
     target_modules: Optional[str] = field(default="all")
     lora_rank: Optional[int] = field(default=8)
     lora_dropout: Optional[float] = field(default=0.05)
     lora_alpha: Optional[float] = field(default=32.0)
     modules_to_save: Optional[str] = field(default=None)
-    peft_path: Optional[str] = field(default=None, metadata={"help": "The path to the peft model"})
+    peft_path: Optional[str] = field(
+        default=None, metadata={"help": "The path to the peft model"}
+    )
     qlora: bool = field(default=False, metadata={"help": "Whether to use qlora"})
     model_max_length: int = field(
         default=512,
-        metadata={"help": "Maximum model context length. suggest: 8192 * 4, 8192 * 2, 8192, 4096, 2048, 1024, 512"}
+        metadata={
+            "help": "Maximum model context length. suggest: 8192 * 4, 8192 * 2, 8192, 4096, 2048, 1024, 512"
+        },
     )
-    template_name: Optional[str] = field(default="vicuna", metadata={"help": "The prompt template name."})
+    template_name: Optional[str] = field(
+        default="vicuna", metadata={"help": "The prompt template name."}
+    )
 
     def __post_init__(self):
         if self.model_max_length < 60:
-            raise ValueError("You must specify a valid model_max_length >= 60 to run training")
+            raise ValueError(
+                "You must specify a valid model_max_length >= 60 to run training"
+            )
 
 
 class SavePeftModelTrainer(Trainer):
@@ -269,6 +320,7 @@ def find_all_linear_names(peft_model, int4=False, int8=False):
     cls = torch.nn.Linear
     if int4 or int8:
         import bitsandbytes as bnb
+
         if int4:
             cls = bnb.nn.Linear4bit
         elif int8:
@@ -277,11 +329,11 @@ def find_all_linear_names(peft_model, int4=False, int8=False):
     for name, module in peft_model.named_modules():
         if isinstance(module, cls):
             # last layer is not add to lora_module_names
-            if 'lm_head' in name:
+            if "lm_head" in name:
                 continue
-            if 'output_layer' in name:
+            if "output_layer" in name:
                 continue
-            names = name.split('.')
+            names = name.split(".")
             lora_module_names.add(names[0] if len(names) == 1 else names[-1])
     return sorted(lora_module_names)
 
@@ -300,9 +352,9 @@ def check_and_optimize_memory():
     num_gpus = torch.cuda.device_count()
     for i in range(num_gpus):
         props = torch.cuda.get_device_properties(i)
-        total_memory = props.total_memory / 1024 ** 3
-        allocated = torch.cuda.memory_allocated(i) / 1024 ** 3
-        cached = torch.cuda.memory_reserved(i) / 1024 ** 3
+        total_memory = props.total_memory / 1024**3
+        allocated = torch.cuda.memory_allocated(i) / 1024**3
+        cached = torch.cuda.memory_reserved(i) / 1024**3
         free = total_memory - allocated - cached
 
         logger.info(f"GPU {i} ({props.name}):")
@@ -312,27 +364,40 @@ def check_and_optimize_memory():
         logger.info(f"  可用: {free:.1f}GB")
 
     # 设置内存优化选项
-    if hasattr(torch.backends.cuda, 'enable_flash_sdp'):
+    if hasattr(torch.backends.cuda, "enable_flash_sdp"):
         torch.backends.cuda.enable_flash_sdp(True)
         logger.info("✅ 启用Flash Attention优化")
 
     # 启用内存高效的注意力机制
-    if hasattr(torch.backends.cuda, 'enable_mem_efficient_sdp'):
+    if hasattr(torch.backends.cuda, "enable_mem_efficient_sdp"):
         torch.backends.cuda.enable_mem_efficient_sdp(True)
         logger.info("✅ 启用内存高效注意力机制")
 
 
 def main():
-    parser = HfArgumentParser((ModelArguments, DataArguments, Seq2SeqTrainingArguments, ScriptArguments))
+    parser = HfArgumentParser(
+        (ModelArguments, DataArguments, Seq2SeqTrainingArguments, ScriptArguments)
+    )
 
-    # 使用 parse_args_into_dataclasses 时忽略未知参数
-    if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
-        # 如果我们传递了一个 JSON 文件，让我们用它来配置参数
-        model_args, data_args, training_args, script_args = parser.parse_json_file(
-            json_file=os.path.abspath(sys.argv[1]))
+    config_file = None
+    if "--config" in sys.argv:
+        config_idx = sys.argv.index("--config")
+        config_file = sys.argv[config_idx + 1]
+        sys.argv = sys.argv[:config_idx] + sys.argv[config_idx + 2 :]
+
+    if config_file:
+        if config_file.endswith(".json"):
+            model_args, data_args, training_args, script_args = parser.parse_json_file(
+                json_file=os.path.abspath(config_file)
+            )
+        else:
+            model_args, data_args, training_args, script_args = parser.parse_yaml_file(
+                yaml_file=os.path.abspath(config_file)
+            )
     else:
-        # 否则解析命令行参数，忽略未知参数
-        model_args, data_args, training_args, script_args = parser.parse_args_into_dataclasses(look_for_args_file=False)
+        model_args, data_args, training_args, script_args = (
+            parser.parse_args_into_dataclasses(look_for_args_file=False)
+        )
 
     # 确保 DeepSpeed 配置正确加载
     if training_args.deepspeed is not None:
@@ -364,25 +429,37 @@ def main():
     tokenizer_name_or_path = model_args.tokenizer_name_or_path
     if not tokenizer_name_or_path:
         tokenizer_name_or_path = model_args.model_name_or_path
-    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path, **tokenizer_kwargs)
+    tokenizer = AutoTokenizer.from_pretrained(
+        tokenizer_name_or_path, **tokenizer_kwargs
+    )
     prompt_template = get_conv_template(script_args.template_name)
     if tokenizer.eos_token_id is None:
         tokenizer.eos_token = prompt_template.stop_str  # eos token is required
         tokenizer.add_special_tokens({"eos_token": tokenizer.eos_token})
-        logger.info(f"Add eos_token: {tokenizer.eos_token}, eos_token_id: {tokenizer.eos_token_id}")
+        logger.info(
+            f"Add eos_token: {tokenizer.eos_token}, eos_token_id: {tokenizer.eos_token_id}"
+        )
     if tokenizer.bos_token_id is None:
         tokenizer.add_special_tokens({"bos_token": tokenizer.eos_token})
         tokenizer.bos_token_id = tokenizer.eos_token_id
-        logger.info(f"Add bos_token: {tokenizer.bos_token}, bos_token_id: {tokenizer.bos_token_id}")
+        logger.info(
+            f"Add bos_token: {tokenizer.bos_token}, bos_token_id: {tokenizer.bos_token_id}"
+        )
     if tokenizer.pad_token_id is None:
         if tokenizer.unk_token_id is not None:
             tokenizer.pad_token = tokenizer.unk_token
         else:
             tokenizer.pad_token = tokenizer.eos_token
-        logger.info(f"Add pad_token: {tokenizer.pad_token}, pad_token_id: {tokenizer.pad_token_id}")
+        logger.info(
+            f"Add pad_token: {tokenizer.pad_token}, pad_token_id: {tokenizer.pad_token_id}"
+        )
     logger.debug(f"Tokenizer: {tokenizer}")
 
-    IGNORE_INDEX = LabelSmoother.ignore_index if data_args.ignore_pad_token_for_loss else tokenizer.pad_token_id
+    IGNORE_INDEX = (
+        LabelSmoother.ignore_index
+        if data_args.ignore_pad_token_for_loss
+        else tokenizer.pad_token_id
+    )
 
     # Get datasets
     if data_args.dataset_name is not None:
@@ -396,8 +473,7 @@ def main():
             shuffled_train_dataset = raw_datasets["train"].shuffle(seed=42)
             # Split the shuffled train dataset into training and validation sets
             split = shuffled_train_dataset.train_test_split(
-                test_size=data_args.validation_split_percentage / 100,
-                seed=42
+                test_size=data_args.validation_split_percentage / 100, seed=42
             )
             # Assign the split datasets back to raw_datasets
             raw_datasets["train"] = split["train"]
@@ -405,18 +481,24 @@ def main():
     else:
         # Loading a dataset from local files.
         data_files = {}
-        if data_args.train_file_dir is not None and os.path.exists(data_args.train_file_dir):
-            train_data_files = glob(f'{data_args.train_file_dir}/**/*.json', recursive=True) + glob(
-                f'{data_args.train_file_dir}/**/*.jsonl', recursive=True)
+        if data_args.train_file_dir is not None and os.path.exists(
+            data_args.train_file_dir
+        ):
+            train_data_files = glob(
+                f"{data_args.train_file_dir}/**/*.json", recursive=True
+            ) + glob(f"{data_args.train_file_dir}/**/*.jsonl", recursive=True)
             logger.info(f"train files: {train_data_files}")
             data_files["train"] = train_data_files
-        if data_args.validation_file_dir is not None and os.path.exists(data_args.validation_file_dir):
-            eval_data_files = glob(f'{data_args.validation_file_dir}/**/*.json', recursive=True) + glob(
-                f'{data_args.validation_file_dir}/**/*.jsonl', recursive=True)
+        if data_args.validation_file_dir is not None and os.path.exists(
+            data_args.validation_file_dir
+        ):
+            eval_data_files = glob(
+                f"{data_args.validation_file_dir}/**/*.json", recursive=True
+            ) + glob(f"{data_args.validation_file_dir}/**/*.jsonl", recursive=True)
             logger.info(f"eval files: {eval_data_files}")
             data_files["validation"] = eval_data_files
         raw_datasets = load_dataset(
-            'json',
+            "json",
             data_files=data_files,
             cache_dir=model_args.cache_dir,
         )
@@ -424,8 +506,7 @@ def main():
         if "validation" not in raw_datasets.keys():
             shuffled_train_dataset = raw_datasets["train"].shuffle(seed=42)
             split = shuffled_train_dataset.train_test_split(
-                test_size=float(data_args.validation_split_percentage / 100),
-                seed=42
+                test_size=float(data_args.validation_split_percentage / 100), seed=42
             )
             raw_datasets["train"] = split["train"]
             raw_datasets["validation"] = split["test"]
@@ -446,7 +527,7 @@ def main():
 
         def get_dialog(examples):
             system_prompts = examples.get("system_prompt", "")
-            for i, source in enumerate(examples['conversations']):
+            for i, source in enumerate(examples["conversations"]):
                 system_prompt = ""
                 if len(source) < 2:
                     continue
@@ -472,17 +553,25 @@ def main():
                 if len(messages) % 2 != 0:
                     continue
                 # Convert the list to pairs of elements
-                history_messages = [[messages[k], messages[k + 1]] for k in range(0, len(messages), 2)]
+                history_messages = [
+                    [messages[k], messages[k + 1]] for k in range(0, len(messages), 2)
+                ]
                 if not system_prompt:
                     system_prompt = system_prompts[i] if system_prompts else ""
-                yield prompt_template.get_dialog(history_messages, system_prompt=system_prompt)
+                yield prompt_template.get_dialog(
+                    history_messages, system_prompt=system_prompt
+                )
 
         for dialog in get_dialog(examples):
             input_ids, labels = [], []
 
             for i in range(len(dialog) // 2):
-                source_ids = tokenizer.encode(text=dialog[2 * i], add_special_tokens=(i == 0))
-                target_ids = tokenizer.encode(text=dialog[2 * i + 1], add_special_tokens=False)
+                source_ids = tokenizer.encode(
+                    text=dialog[2 * i], add_special_tokens=(i == 0)
+                )
+                target_ids = tokenizer.encode(
+                    text=dialog[2 * i + 1], add_special_tokens=False
+                )
 
                 total_len = len(source_ids) + len(target_ids)
                 max_source_len = int(max_length * (len(source_ids) / total_len))
@@ -491,7 +580,7 @@ def main():
                 if len(source_ids) > max_source_len:
                     source_ids = source_ids[:max_source_len]
                 if len(target_ids) > max_target_len - 1:  # eos token
-                    target_ids = target_ids[:max_target_len - 1]
+                    target_ids = target_ids[: max_target_len - 1]
                 if len(source_ids) > 0 and source_ids[0] == tokenizer.eos_token_id:
                     source_ids = source_ids[1:]
                 if len(target_ids) > 0 and target_ids[-1] == tokenizer.eos_token_id:
@@ -499,11 +588,17 @@ def main():
                 if len(input_ids) + len(source_ids) + len(target_ids) + 1 > max_length:
                     break
 
-                input_ids += source_ids + target_ids + [tokenizer.eos_token_id]  # add eos token for each turn
+                input_ids += (
+                    source_ids + target_ids + [tokenizer.eos_token_id]
+                )  # add eos token for each turn
                 if script_args.train_on_inputs:
                     labels += source_ids + target_ids + [tokenizer.eos_token_id]
                 else:
-                    labels += [IGNORE_INDEX] * len(source_ids) + target_ids + [tokenizer.eos_token_id]
+                    labels += (
+                        [IGNORE_INDEX] * len(source_ids)
+                        + target_ids
+                        + [tokenizer.eos_token_id]
+                    )
 
             input_ids_list.append(input_ids)
             attention_mask_list.append([1] * len(input_ids))
@@ -524,7 +619,7 @@ def main():
     if training_args.do_train:
         if "train" not in raw_datasets:
             raise ValueError("--do_train requires a train dataset")
-        train_dataset = raw_datasets['train'].shuffle(seed=42)
+        train_dataset = raw_datasets["train"].shuffle(seed=42)
         max_train_samples = len(train_dataset)
         if data_args.max_train_samples is not None and data_args.max_train_samples > 0:
             max_train_samples = min(len(train_dataset), data_args.max_train_samples)
@@ -543,16 +638,19 @@ def main():
                 desc="Running tokenizer on dataset" if is_main_process else None,
             )
             train_dataset = tokenized_dataset.filter(
-                filter_empty_labels,
-                num_proc=data_args.preprocessing_num_workers
+                filter_empty_labels, num_proc=data_args.preprocessing_num_workers
             )
 
             if is_main_process:
                 logger.debug(f"Num train_samples: {len(train_dataset)}")
                 logger.debug("Tokenized training example:")
-                logger.debug(f"Decode input_ids[0]:\n{tokenizer.decode(train_dataset[0]['input_ids'])}")
-                replaced_labels = [label if label != IGNORE_INDEX else tokenizer.pad_token_id
-                                   for label in list(train_dataset[0]['labels'])]
+                logger.debug(
+                    f"Decode input_ids[0]:\n{tokenizer.decode(train_dataset[0]['input_ids'])}"
+                )
+                replaced_labels = [
+                    label if label != IGNORE_INDEX else tokenizer.pad_token_id
+                    for label in list(train_dataset[0]["labels"])
+                ]
                 logger.debug(f"Decode labels[0]:\n{tokenizer.decode(replaced_labels)}")
 
     eval_dataset = None
@@ -563,14 +661,19 @@ def main():
                 raise ValueError("--do_eval requires a validation dataset")
             eval_dataset = raw_datasets["validation"]
             max_eval_samples = len(eval_dataset)
-            if data_args.max_eval_samples is not None and data_args.max_eval_samples > 0:
+            if (
+                data_args.max_eval_samples is not None
+                and data_args.max_eval_samples > 0
+            ):
                 max_eval_samples = min(len(eval_dataset), data_args.max_eval_samples)
                 eval_dataset = eval_dataset.select(range(max_eval_samples))
             eval_size = len(eval_dataset)
             logger.debug(f"Num eval_samples: {eval_size}")
             if eval_size > 500:
-                logger.warning(f"Num eval_samples is large: {eval_size}, "
-                               f"training slow, consider reduce it by `--max_eval_samples=50`")
+                logger.warning(
+                    f"Num eval_samples is large: {eval_size}, "
+                    f"training slow, consider reduce it by `--max_eval_samples=50`"
+                )
             logger.debug(f"Example eval_dataset[0]: {eval_dataset[0]}")
             eval_dataset = eval_dataset.map(
                 preprocess_function,
@@ -580,10 +683,12 @@ def main():
                 load_from_cache_file=not data_args.overwrite_cache,
                 desc="Running tokenizer on validation dataset",
             )
-            eval_dataset = eval_dataset.filter(filter_empty_labels, num_proc=data_args.preprocessing_num_workers)
+            eval_dataset = eval_dataset.filter(
+                filter_empty_labels, num_proc=data_args.preprocessing_num_workers
+            )
             logger.debug(f"Num eval_samples: {len(eval_dataset)}")
             logger.debug("Tokenized eval example:")
-            logger.debug(tokenizer.decode(eval_dataset[0]['input_ids']))
+            logger.debug(tokenizer.decode(eval_dataset[0]["input_ids"]))
 
     # Load model
     if model_args.model_name_or_path:
@@ -598,8 +703,12 @@ def main():
             model_args.device_map = None
         if model_args.device_map in ["None", "none", ""]:
             model_args.device_map = None
-        if script_args.qlora and (len(training_args.fsdp) > 0 or is_deepspeed_zero3_enabled()):
-            logger.warning("FSDP and DeepSpeed ZeRO-3 are both currently incompatible with QLoRA.")
+        if script_args.qlora and (
+            len(training_args.fsdp) > 0 or is_deepspeed_zero3_enabled()
+        ):
+            logger.warning(
+                "FSDP and DeepSpeed ZeRO-3 are both currently incompatible with QLoRA."
+            )
 
         config_kwargs = {
             "trust_remote_code": model_args.trust_remote_code,
@@ -607,7 +716,9 @@ def main():
             "revision": model_args.model_revision,
             "token": model_args.hf_hub_token,
         }
-        config = AutoConfig.from_pretrained(model_args.model_name_or_path, **config_kwargs)
+        config = AutoConfig.from_pretrained(
+            model_args.model_name_or_path, **config_kwargs
+        )
 
         # Set RoPE scaling
         if model_args.rope_scaling is not None:
@@ -618,17 +729,30 @@ def main():
                         "See: https://github.com/huggingface/transformers/pull/24653"
                     )
                 current_max_length = getattr(config, "max_position_embeddings", None)
-                if current_max_length and script_args.model_max_length > current_max_length:
-                    scaling_factor = float(math.ceil(script_args.model_max_length / current_max_length))
+                if (
+                    current_max_length
+                    and script_args.model_max_length > current_max_length
+                ):
+                    scaling_factor = float(
+                        math.ceil(script_args.model_max_length / current_max_length)
+                    )
                 else:
-                    logger.warning(f"The model_max_length({script_args.model_max_length}) is smaller than max "
-                                   f"length({current_max_length}). Consider increase model_max_length.")
+                    logger.warning(
+                        f"The model_max_length({script_args.model_max_length}) is smaller than max "
+                        f"length({current_max_length}). Consider increase model_max_length."
+                    )
                     scaling_factor = 1.0
 
-                setattr(config, "rope_scaling", {"type": model_args.rope_scaling, "factor": scaling_factor})
-                logger.info("Using {} scaling strategy and setting scaling factor to {}".format(
-                    model_args.rope_scaling, scaling_factor
-                ))
+                setattr(
+                    config,
+                    "rope_scaling",
+                    {"type": model_args.rope_scaling, "factor": scaling_factor},
+                )
+                logger.info(
+                    "Using {} scaling strategy and setting scaling factor to {}".format(
+                        model_args.rope_scaling, scaling_factor
+                    )
+                )
             else:
                 logger.warning("Current model does not support RoPE scaling.")
 
@@ -640,8 +764,10 @@ def main():
             else:
                 logger.warning("FlashAttention-2 is not installed.")
         elif model_args.shift_attn and getattr(config, "model_type", None) == "llama":
-            logger.warning("Using `--flash_attn` for faster training in large context length, enable if your GPU"
-                           " is RTX3090, RTX4090, A100 or H100.")
+            logger.warning(
+                "Using `--flash_attn` for faster training in large context length, enable if your GPU"
+                " is RTX3090, RTX4090, A100 or H100."
+            )
 
         # Set shifted sparse attention (S^2-Attn)
         if model_args.shift_attn:
@@ -649,15 +775,21 @@ def main():
                 setattr(config, "group_size_ratio", 0.25)
                 logger.info("Using shifted sparse attention with group_size_ratio=1/4.")
             else:
-                logger.warning("Current model does not support shifted sparse attention.")
+                logger.warning(
+                    "Current model does not support shifted sparse attention."
+                )
 
         load_in_4bit = model_args.load_in_4bit
         load_in_8bit = model_args.load_in_8bit
         quantization_config = None
         if load_in_4bit and load_in_8bit:
-            raise ValueError("Error, load_in_4bit and load_in_8bit cannot be set at the same time")
+            raise ValueError(
+                "Error, load_in_4bit and load_in_8bit cannot be set at the same time"
+            )
         elif load_in_8bit or load_in_4bit:
-            logger.info(f"Quantizing model, load_in_4bit: {load_in_4bit}, load_in_8bit: {load_in_8bit}")
+            logger.info(
+                f"Quantizing model, load_in_4bit: {load_in_4bit}, load_in_8bit: {load_in_8bit}"
+            )
             if is_deepspeed_zero3_enabled():
                 raise ValueError("DeepSpeed ZeRO-3 is incompatible with quantization.")
             if load_in_8bit:
@@ -668,7 +800,7 @@ def main():
                         load_in_4bit=True,
                         bnb_4bit_compute_dtype=torch_dtype,
                         bnb_4bit_use_double_quant=True,
-                        bnb_4bit_quant_type="nf4"
+                        bnb_4bit_quant_type="nf4",
                     )
                 else:
                     quantization_config = BitsAndBytesConfig(
@@ -687,7 +819,7 @@ def main():
 
         # 设置device_map
         num_gpus = torch.cuda.device_count()
-        if model_args.device_map == 'auto':
+        if model_args.device_map == "auto":
             if num_gpus > 1 and not ddp:
                 # 大模型多GPU：使用auto进行张量并行
                 model_kwargs["device_map"] = "auto"
@@ -699,7 +831,7 @@ def main():
                     total_mem = gpu_props.total_memory
                     # 预留20%内存给训练时的梯度、优化器状态等
                     usable_mem = int(total_mem * 0.8)
-                    max_memory[i] = f"{usable_mem // (1024 ** 3)}GiB"
+                    max_memory[i] = f"{usable_mem // (1024**3)}GiB"
 
                 model_kwargs["max_memory"] = max_memory
 
@@ -707,15 +839,14 @@ def main():
         logger.info(f"  model_kwargs: {model_kwargs}")
 
         model = AutoModelForCausalLM.from_pretrained(
-            model_args.model_name_or_path,
-            **model_kwargs
+            model_args.model_name_or_path, **model_kwargs
         )
 
         logger.info("✅ 模型加载完成")
 
         # 显示模型分布信息
         logger.info("📊 模型分布情况:")
-        if hasattr(model, 'hf_device_map') and model.hf_device_map:
+        if hasattr(model, "hf_device_map") and model.hf_device_map:
             logger.info("🔧 使用HuggingFace设备映射:")
             for module_name, device in model.hf_device_map.items():
                 logger.info(f"  {module_name}: {device}")
@@ -736,28 +867,35 @@ def main():
             for name, param in model.named_parameters():
                 device = str(param.device)
                 if device not in device_params:
-                    device_params[device] = {'count': 0, 'size': 0}
-                device_params[device]['count'] += 1
-                device_params[device]['size'] += param.numel()
+                    device_params[device] = {"count": 0, "size": 0}
+                device_params[device]["count"] += 1
+                device_params[device]["size"] += param.numel()
                 total_params += param.numel()
 
             logger.info("📈 参数设备分布:")
             for device, info in device_params.items():
-                param_size_gb = info['size'] * 4 / 1024 ** 3  # 假设float32
-                percentage = info['size'] / total_params * 100
-                logger.info(f"  {device}: {info['count']} 个参数组, {param_size_gb:.2f}GB ({percentage:.1f}%)")
+                param_size_gb = info["size"] * 4 / 1024**3  # 假设float32
+                percentage = info["size"] / total_params * 100
+                logger.info(
+                    f"  {device}: {info['count']} 个参数组, {param_size_gb:.2f}GB ({percentage:.1f}%)"
+                )
 
         # 显示GPU内存使用情况
         if torch.cuda.is_available():
             logger.info("💾 GPU内存使用情况:")
             for i in range(torch.cuda.device_count()):
-                allocated = torch.cuda.memory_allocated(i) / 1024 ** 3
-                cached = torch.cuda.memory_reserved(i) / 1024 ** 3
-                total = torch.cuda.get_device_properties(i).total_memory / 1024 ** 3
-                logger.info(f"  GPU {i}: 已分配={allocated:.1f}GB, 缓存={cached:.1f}GB, 总计={total:.1f}GB")
+                allocated = torch.cuda.memory_allocated(i) / 1024**3
+                cached = torch.cuda.memory_reserved(i) / 1024**3
+                total = torch.cuda.get_device_properties(i).total_memory / 1024**3
+                logger.info(
+                    f"  GPU {i}: 已分配={allocated:.1f}GB, 缓存={cached:.1f}GB, 总计={total:.1f}GB"
+                )
 
         # Fix ChatGLM2 and ChatGLM3 and internlm2 LM head
-        if getattr(config, "model_type", None) == "chatglm" or getattr(config, "model_type", None) == "internlm2":
+        if (
+            getattr(config, "model_type", None) == "chatglm"
+            or getattr(config, "model_type", None) == "internlm2"
+        ):
             setattr(model, "lm_head", model.transformer.output_layer)
             setattr(model, "_keys_to_ignore_on_save", ["lm_head.weight"])
 
@@ -765,43 +903,74 @@ def main():
         if model_args.neft_alpha > 0:
             input_embed = model.get_input_embeddings()
             if isinstance(input_embed, torch.nn.Embedding):
-                def noisy_forward(self: torch.nn.Embedding, x: torch.Tensor) -> torch.Tensor:
+
+                def noisy_forward(
+                    self: torch.nn.Embedding, x: torch.Tensor
+                ) -> torch.Tensor:
                     embeddings = input_embed.__class__.forward(self, x)
                     dims = self.num_embeddings * self.embedding_dim
-                    mag_norm = model_args.neft_alpha / (dims ** 0.5)
-                    embeddings += torch.zeros_like(embeddings).uniform_(-mag_norm, mag_norm)
+                    mag_norm = model_args.neft_alpha / (dims**0.5)
+                    embeddings += torch.zeros_like(embeddings).uniform_(
+                        -mag_norm, mag_norm
+                    )
                     return embeddings
 
                 input_embed.forward = MethodType(noisy_forward, input_embed)
-                logger.info("Using noisy embedding with alpha={:.2f}".format(model_args.neft_alpha))
+                logger.info(
+                    "Using noisy embedding with alpha={:.2f}".format(
+                        model_args.neft_alpha
+                    )
+                )
             else:
-                logger.warning("Input embeddings are not normal nn.Embedding, cannot transform into noisy embedding.")
+                logger.warning(
+                    "Input embeddings are not normal nn.Embedding, cannot transform into noisy embedding."
+                )
 
         # Patch Mixtral MOE model
-        if getattr(config, "model_type", None) == "mixtral" and is_deepspeed_zero3_enabled():
-            require_version("deepspeed>=0.13.0", "To fix: pip install deepspeed>=0.13.0")
+        if (
+            getattr(config, "model_type", None) == "mixtral"
+            and is_deepspeed_zero3_enabled()
+        ):
+            require_version(
+                "deepspeed>=0.13.0", "To fix: pip install deepspeed>=0.13.0"
+            )
             from deepspeed.utils import set_z3_leaf_modules  # type: ignore
-            from transformers.models.mixtral.modeling_mixtral import MixtralSparseMoeBlock  # type: ignore
+            from transformers.models.mixtral.modeling_mixtral import (
+                MixtralSparseMoeBlock,
+            )  # type: ignore
 
             set_z3_leaf_modules(model, [MixtralSparseMoeBlock])
 
         # Patch DeepSeek-V3 MoE module
-        if getattr(config, "model_type", None) == "deepseek_v3" and is_deepspeed_zero3_enabled():
-            require_version("deepspeed>=0.13.0", "To fix: pip install deepspeed>=0.13.0")
+        if (
+            getattr(config, "model_type", None) == "deepseek_v3"
+            and is_deepspeed_zero3_enabled()
+        ):
+            require_version(
+                "deepspeed>=0.13.0", "To fix: pip install deepspeed>=0.13.0"
+            )
             # deepseek_v3 moe module set as leaf node
             for layer in model.model.layers:
-                if 'DeepseekV3MoE' in str(type(layer.mlp)):
+                if "DeepseekV3MoE" in str(type(layer.mlp)):
                     layer.mlp._z3_leaf = True
     else:
-        raise ValueError(f"Error, model_name_or_path is None, SFT must be loaded from a pre-trained model")
+        raise ValueError(
+            f"Error, model_name_or_path is None, SFT must be loaded from a pre-trained model"
+        )
 
     if script_args.use_peft:
         logger.info("Fine-tuning method: LoRA(PEFT)")
 
         # Set fp32 forward hook for lm_head
         output_layer = getattr(model, "lm_head")
-        if isinstance(output_layer, torch.nn.Linear) and output_layer.weight.dtype != torch.float32:
-            def fp32_forward_post_hook(module: torch.nn.Module, args: Tuple[torch.Tensor], output: torch.Tensor):
+        if (
+            isinstance(output_layer, torch.nn.Linear)
+            and output_layer.weight.dtype != torch.float32
+        ):
+
+            def fp32_forward_post_hook(
+                module: torch.nn.Module, args: Tuple[torch.Tensor], output: torch.Tensor
+            ):
                 return output.to(torch.float32)
 
             output_layer.register_forward_hook(fp32_forward_post_hook)
@@ -809,20 +978,30 @@ def main():
         # Load LoRA model
         if script_args.peft_path is not None:
             logger.info(f"Peft from pre-trained model: {script_args.peft_path}")
-            model = PeftModel.from_pretrained(model, script_args.peft_path, is_trainable=True)
+            model = PeftModel.from_pretrained(
+                model, script_args.peft_path, is_trainable=True
+            )
         else:
             logger.info("Init new peft model")
             if load_in_8bit or load_in_4bit:
-                model = prepare_model_for_kbit_training(model, training_args.gradient_checkpointing)
-            target_modules = script_args.target_modules.split(',') if script_args.target_modules else None
-            if target_modules and 'all' in target_modules:
-                target_modules = find_all_linear_names(model, int4=load_in_4bit, int8=load_in_8bit)
+                model = prepare_model_for_kbit_training(
+                    model, training_args.gradient_checkpointing
+                )
+            target_modules = (
+                script_args.target_modules.split(",")
+                if script_args.target_modules
+                else None
+            )
+            if target_modules and "all" in target_modules:
+                target_modules = find_all_linear_names(
+                    model, int4=load_in_4bit, int8=load_in_8bit
+                )
             modules_to_save = script_args.modules_to_save
             if modules_to_save is not None:
-                modules_to_save = modules_to_save.split(',')
+                modules_to_save = modules_to_save.split(",")
             logger.info(f"Peft target_modules: {target_modules}")
             logger.info(f"Peft lora_rank: {script_args.lora_rank}")
-            # config peft 
+            # config peft
             peft_config = LoraConfig(
                 task_type=TaskType.CAUSAL_LM,
                 target_modules=target_modules,
@@ -830,7 +1009,8 @@ def main():
                 r=script_args.lora_rank,
                 lora_alpha=script_args.lora_alpha,
                 lora_dropout=script_args.lora_dropout,
-                modules_to_save=modules_to_save)
+                modules_to_save=modules_to_save,
+            )
             model = get_peft_model(model, peft_config)
         for param in filter(lambda p: p.requires_grad, model.parameters()):
             param.data = param.data.to(torch.float32)
@@ -841,7 +1021,9 @@ def main():
         print_trainable_parameters(model)
 
     # Initialize our Trainer
-    if training_args.gradient_checkpointing and getattr(model, "supports_gradient_checkpointing", False):
+    if training_args.gradient_checkpointing and getattr(
+        model, "supports_gradient_checkpointing", False
+    ):
         model.gradient_checkpointing_enable()
         model.config.use_cache = False
         logger.info("Gradient checkpointing enabled.")
@@ -858,7 +1040,9 @@ def main():
         tokenizer=tokenizer,
         model=model,
         label_pad_token_id=IGNORE_INDEX,
-        pad_to_multiple_of=4 if tokenizer.padding_side == "right" else None,  # for shifted sparse attention
+        pad_to_multiple_of=4
+        if tokenizer.padding_side == "right"
+        else None,  # for shifted sparse attention
     )
     # Initialize our Trainer
     trainer = SavePeftModelTrainer(
@@ -876,10 +1060,16 @@ def main():
             logger.info("*** Train ***")
             sample = next(iter(trainer.get_train_dataloader()))
             logger.debug(f"Train dataloader example: {sample}")
-            logger.debug(f"input_ids:\n{list(sample['input_ids'])[:3]}, \nlabels:\n{list(sample['labels'])[:3]}")
-            logger.debug(f"Decode input_ids[0]:\n{tokenizer.decode(sample['input_ids'][0])}")
-            replaced_labels = [label if label != IGNORE_INDEX else tokenizer.pad_token_id for label in
-                               sample['labels'][0]]
+            logger.debug(
+                f"input_ids:\n{list(sample['input_ids'])[:3]}, \nlabels:\n{list(sample['labels'])[:3]}"
+            )
+            logger.debug(
+                f"Decode input_ids[0]:\n{tokenizer.decode(sample['input_ids'][0])}"
+            )
+            replaced_labels = [
+                label if label != IGNORE_INDEX else tokenizer.pad_token_id
+                for label in sample["labels"][0]
+            ]
             logger.debug(f"Decode labels[0]:\n{tokenizer.decode(replaced_labels)}")
         checkpoint = None
         if training_args.resume_from_checkpoint is not None:

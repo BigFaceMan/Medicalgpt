@@ -1,21 +1,3 @@
-CUDA_VISIBLE_DEVICES=0,1 python ./src/trainer/ppo_training.py \
-    --sft_model_path /lfs1/users/spsong/Code/MedicalGPT/output/qwen0.5B-instruct-merge \
-    --reward_model_path /lfs1/users/spsong/Code/MedicalGPT/output/qwen0.5B-instruct-rm-merge \
-    --template_name qwen \
-    --torch_dtype bfloat16 \
-    --train_file_dir ./data/finetune \
-    --validation_file_dir ./data/finetune \
-    --max_source_length 1024 \
-    --response_length 1000 \
-    --per_device_train_batch_size 1 \
-    --gradient_accumulation_steps 4 \
-    --gradient_checkpointing True \
-    --do_train \
-    --total_episodes 300 \
-    --output_dir outputs-ppo-qwen-v1 \
-    --missing_eos_penalty 1.0 \
-    --eval_strategy steps \
-    --eval_steps 100 \
-    --num_train_epochs 3 \
-    --report_to swanlab \
-    --run_name qwen0.5B-instruct-ppo \
+#!/bin/bash
+# PPO Training with YAML config
+CUDA_VISIBLE_DEVICES=0,1 python ./src/trainer/ppo_training.py --config configs/ppo_qwen3b.yaml

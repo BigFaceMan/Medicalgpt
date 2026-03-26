@@ -1,33 +1,3 @@
-CUDA_VISIBLE_DEVICES=1 torchrun --nproc_per_node=1 ./src/trainer/dpo_training.py \
-    --model_name_or_path /lfs1/users/spsong/Code/MedicalGPT/output/qwen0.5B-instruct-merge \
-    --template_name qwen \
-    --train_file_dir ./data/reward \
-    --validation_file_dir ./data/reward \
-    --per_device_train_batch_size 4 \
-    --gradient_accumulation_steps 8 \
-    --per_device_eval_batch_size 1 \
-    --do_train \
-    --do_eval \
-    --use_peft True \
-    --max_train_samples 1000 \
-    --max_eval_samples 10 \
-    --max_steps 100 \
-    --eval_steps 20 \
-    --save_steps 50 \
-    --max_source_length 1024 \
-    --max_target_length 512 \
-    --output_dir ./output/qwen0.5B-instruct-dpo \
-    --target_modules all \
-    --lora_rank 8 \
-    --lora_alpha 16 \
-    --lora_dropout 0.05 \
-    --torch_dtype bfloat16 \
-    --bf16 True \
-    --fp16 False \
-    --report_to swanlab \
-    --run_name qwen0.5B-instruct-dpo \
-    --remove_unused_columns False \
-    --gradient_checkpointing True \
-    --ddp_find_unused_parameters False \
-    --ddp_timeout 30000 \
-    --cache_dir ./cache
+#!/bin/bash
+# DPO Training with YAML config
+CUDA_VISIBLE_DEVICES=1 torchrun --nproc_per_node=1 ./src/trainer/dpo_training.py --config configs/dpo_qwen3b.yaml
